@@ -1,5 +1,5 @@
 {
-    "name": "tyrsson/repo-template",
+    "name": "webware/asciidoc-php",
     "description": "A template repository for new PHP projects",
     "license": "BSD-3-Clause",
     "keywords": [
@@ -11,7 +11,7 @@
         {
             "name": "Joey (aka Tyrsson) Smith",
             "email": "jsmith@webinertia.net",
-            "homepage": "https://github.com/tyrsson/repo-template/discussions",
+            "homepage": "https://github.com/tyrsson/asciidoc-php/discussions",
             "role": "Developer"
         }
     ],
@@ -38,14 +38,14 @@
     },
     "autoload": {
         "psr-4": {
-            "Tyrsson\\RepoTemplate\\": "src/"
+            "Webware\\AsciidocPhp\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "TyrssonIntegrationTest\\RepoTemplate\\": "test/integration/",
-            "TyrssonTestAsset\\RepoTemplate\\": "test/asset/",
-            "TyrssonTest\\RepoTemplate\\": "test/unit/"
+            "Webware\\AsciidocPhp\\IntegrationTest\\": "test/integration/",
+            "Webware\\AsciidocPhp\\TestAsset\\": "test/asset/",
+            "Webware\\AsciidocPhp\\Test\\": "test/unit/"
         }
     },
     "scripts": {

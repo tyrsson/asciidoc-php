@@ -1,0 +1,68 @@
+{
+    "name": "tyrsson/repo-template",
+    "description": "A template repository for new PHP projects",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "template",
+        "repository",
+        "php"
+    ],
+    "authors": [
+        {
+            "name": "Joey (aka Tyrsson) Smith",
+            "email": "jsmith@webinertia.net",
+            "homepage": "https://github.com/tyrsson/repo-template/discussions",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.99"
+        },
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
+    },
+    "require": {
+        "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpunit/phpunit": "^11.5.42",
+        "roave/security-advisories": "dev-master",
+        "webware/coding-standard": "^0.1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tyrsson\\RepoTemplate\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TyrssonIntegrationTest\\RepoTemplate\\": "test/integration/",
+            "TyrssonTestAsset\\RepoTemplate\\": "test/asset/",
+            "TyrssonTest\\RepoTemplate\\": "test/unit/"
+        }
+    },
+    "scripts": {
+        "check": [
+            "@cs-check",
+            "@sa",
+            "@test",
+            "@test-integration"
+        ],
+        "cs-check": "vendor/bin/php-cs-fixer check -v --show-progress=dots --stop-on-violation",
+        "cs-fix": "vendor/bin/php-cs-fixer fix",
+        "test": "phpunit --colors=always --testsuite \"unit test\"",
+        "test-coverage": "phpunit --colors=always --coverage-clover clover.xml",
+        "test-integration": "phpunit --colors=always --testsuite \"integration test\"",
+        "sa": "vendor/bin/phpstan analyse --memory-limit=256M",
+        "sa-gen-baseline": "vendor/bin/phpstan analyse --memory-limit=256M --generate-baseline",
+        "sa-verbose": "vendor/bin/phpstan analyse --memory-limit=256M -vv",
+        "upload-coverage": "coveralls -v"
+    }
+}

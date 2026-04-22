@@ -5,6 +5,11 @@
 CLI tool that converts AsciiDoc (`.adoc`) source files to HTML5, usable as a
 GitHub Action to build GitHub Pages documentation for phpdb project repositories.
 
+**Runtime:** PHP 8.6+ with TrueAsync 1.0. Multiple input files are processed
+concurrently via `Async\TaskGroup` inside the CLI invoker. The async runtime is
+transparent — no coroutine primitives appear in the parser, converter, or
+substitution pipeline.
+
 ---
 
 ## Feature Tiers
@@ -81,7 +86,7 @@ They are not required for the phpdb documentation use case.
 |---|---|
 | Ruby-to-PHP 1:1 API compatibility | Not a goal; PHP idioms preferred |
 | Asciidoctor.js / browser runtime | Different project |
-| GUI or web server mode | CLI + GitHub Action is sufficient |
+| GUI or web server mode | CLI + GitHub Action is sufficient for MVP (TrueAsync makes a future server mode feasible but it is not required) |
 | Server-side syntax highlighting | Route via highlight.js client-side JS |
 | Tilt template engine adapter | Not available in PHP |
 
@@ -95,6 +100,9 @@ They are not required for the phpdb documentation use case.
 4. GitHub Action reads `.adoc` files from a repository and publishes HTML to the
    `gh-pages` branch
 5. The phpdb project documentation renders correctly end-to-end
+6. Batch conversion (`asciidoc-php docs/*.adoc`) processes multiple files
+   concurrently via `Async\TaskGroup` and completes faster than sequential
+   processing on doc sets with ≥ 2 files
 
 ---
 

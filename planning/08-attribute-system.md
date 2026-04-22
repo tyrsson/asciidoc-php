@@ -60,7 +60,8 @@ Special value tokens:
  * semantically different: subAttributes() handles them differently
  * based on the 'attribute-missing' configuration attribute.
  */
-private MutableMap $attributes;   // Psl\Collection\MutableMap<string, string|false>
+/** @var array<string, string|false> */
+private array $attributes = [];
 
 /**
  * Locked attribute names (set by CLI or API with override=false).

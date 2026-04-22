@@ -14,6 +14,8 @@ the GitHub Actions integration workflow used by phpdb projects.
 bin/asciidoc-php  (PHP script, registered as Composer binary)
   #!/usr/bin/env php
   require __DIR__ . '/../vendor/autoload.php';
+  // TrueAsync global scope is active from process start.
+  // Application::run() uses Async\TaskGroup internally for batch conversion.
   exit((new Webware\AsciidocPhp\Cli\Application($argv))->run());
 
 Cli\Application
@@ -36,6 +38,7 @@ Cli\Options  (immutable value object; static factory method)
   - verbose: bool                    (-v)
   - timings: bool                    (-t)
   - trace: bool                      (--trace)
+  - concurrency: int                 (--concurrency N; default: 0 = unbounded)
   + static parse(args: list<string>): self
   + static defaults(): array<string, mixed>
 
@@ -44,8 +47,10 @@ Cli\Invoker
   - logger: Psr\Log\LoggerInterface|null
   + __construct(options: Cli\Options, logger: Psr\Log\LoggerInterface|null = null)
   + invoke(): int
-  - processFile(inputFile: string): void
+  - convertFile(inputFile: string, outPath: string): void
   - resolveOutputPath(inputFile: string, options: Cli\Options): string
+  // Multiple files → Async\TaskGroup for concurrent conversion.
+  // Single file or -o stdout → direct call (no TaskGroup overhead).
 ```
 
 ---
@@ -90,6 +95,11 @@ Options:
   -s, --no-header-footer
         Suppress HTML header and footer (embedded/fragment output).
 
+  --concurrency N
+        Maximum number of files to convert in parallel (default: 0 = unbounded).
+        Useful for limiting memory usage on very large doc sets.
+        Single-file invocations ignore this flag.
+
   -q, --quiet
         Suppress all messages except errors.
 
@@ -114,6 +124,7 @@ Examples:
   asciidoc-php -b html5 -a toc -a source-highlighter=highlight.js docs/guide.adoc
   asciidoc-php -s -o - docs/fragment.adoc | cat
   echo "== Hello" | asciidoc-php -                     # STDIN input
+  asciidoc-php --concurrency 4 docs/*.adoc             # limit parallel workers
 ```
 
 ---
@@ -122,6 +133,7 @@ Examples:
 
 ```
 bin/asciidoc-php
+  (TrueAsync global Scope is active — spawning is available from line 1)
        │
        ▼
 Application::run()
@@ -143,28 +155,46 @@ Application::run()
        │
        ▼
 Invoker::invoke()
-  foreach $options->inputFiles as $inputFile:
-    ├─ resolveOutputPath($inputFile, $options) → $outPath
-    │    If -o set: use that (single file only)
-    │    If -D set: DIR/basename(input, ext) + '.html'
-    │    Else:      same dir as input, ext → '.html'
-    │
-    ├─ processFile($inputFile)
-    │    $html = Asciidoc::convertFile($inputFile, [
-    │              'backend'        => $options->backend,
-    │              'doctype'        => $options->doctype,
-    │              'safe'           => $options->safeMode,
-    │              'attributes'     => $options->attributes,
-    │              'header_footer'  => !$options->noHeaderFooter,
-    │              'base_dir'       => $options->baseDir,
-    │            ])
-    │    if $outPath === '-':  fwrite(STDOUT, $html)
-    │    else:                 Psl\File\write($outPath, $html)
-    │    if $options->verbose: log("Converted: $inputFile → $outPath")
-    │
-    └─ On error: log warning; continue (do not abort batch)
 
-  return 0 (or 1 if any file failed and --fail-on-error is set — Tier 2)
+  Single-file path (1 input, or -o stdout):
+  ├─ resolveOutputPath($inputFile, $options) → $outPath
+  ├─ convertFile($inputFile, $outPath)       ← direct call, no TaskGroup
+  └─ return 0
+
+  Batch path (≥ 2 input files, or -D dir):
+  ├─ $concurrency = $options->concurrency ?: null  (null = unbounded)
+  ├─ $group = new Async\TaskGroup(concurrency: $concurrency)
+  │
+  ├─ foreach $options->inputFiles as $inputFile:
+  │    $outPath = resolveOutputPath($inputFile, $options)
+  │    $group->spawnWithKey($inputFile, fn() => $this->convertFile($inputFile, $outPath))
+  │              │
+  │              └── Each file gets its own coroutine.
+  │                  I/O inside (include:: file reads) suspends the coroutine,
+  │                  yielding to other in-flight file conversions.
+  │
+  ├─ $group->seal()
+  │
+  ├─ foreach ($group as $inputFile => [$result, $error]):
+  │    if ($error !== null):
+  │      log warning "Failed: $inputFile — {$error->getMessage()}"
+  │      $hadError = true
+  │    elseif ($options->verbose):
+  │      log "Converted: $inputFile → resolved output path"
+  │
+  └─ return $hadError ? 1 : 0
+
+convertFile(inputFile: string, outPath: string): void
+  $html = Asciidoc::convertFile($inputFile, [
+            'backend'        => $options->backend,
+            'doctype'        => $options->doctype,
+            'safe'           => $options->safeMode,
+            'attributes'     => $options->attributes,
+            'header_footer'  => !$options->noHeaderFooter,
+            'base_dir'       => $options->baseDir,
+          ])
+  if $outPath === '-':  fwrite(STDOUT, $html)
+  else:                 file_put_contents($outPath, $html)
 ```
 
 ---
@@ -285,7 +315,7 @@ runs:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.4'
+        php-version: '8.6'
         tools: composer:v2
         coverage: none
 
@@ -302,13 +332,14 @@ runs:
         for attr in ${{ inputs.attributes }}; do
           ATTR_FLAGS="$ATTR_FLAGS -a $attr"
         done
-        find "${{ inputs.source-dir }}" -name "*.adoc" | while read f; do
-          php .asciidoc-php/bin/asciidoc-php \
-            -D "${{ inputs.output-dir }}" \
-            -S "${{ inputs.safe-mode }}" \
-            $ATTR_FLAGS \
-            "$f"
-        done
+        # Pass all .adoc files to asciidoc-php in one invocation so that
+        # Cli\Invoker can use Async\TaskGroup to process them concurrently.
+        mapfile -t ADOC_FILES < <(find "${{ inputs.source-dir }}" -name "*.adoc")
+        php .asciidoc-php/bin/asciidoc-php \
+          -D "${{ inputs.output-dir }}" \
+          -S "${{ inputs.safe-mode }}" \
+          $ATTR_FLAGS \
+          "${ADOC_FILES[@]}"
 
     - name: Deploy to GitHub Pages
       if: ${{ inputs.deploy == 'true' }}

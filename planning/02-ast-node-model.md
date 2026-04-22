@@ -272,19 +272,20 @@ enum SafeMode: int
 
 ---
 
-## PSL Types Used
+## Native PHP Types Used
 
-| Purpose | PSL Type |
+| Purpose | Type |
 |---|---|
-| `blocks[]` on AbstractBlock | `Psl\Collection\MutableVector<AbstractBlock>` |
-| `items[]` on AsciiList | `Psl\Collection\MutableVector<ListItem>` |
-| `columns[]` on Table | `Psl\Collection\MutableVector<Table\Column>` |
-| `cells[]` on Table\Row | `Psl\Collection\MutableVector<Table\Cell>` |
-| `attributes` on AbstractNode | `Psl\Collection\MutableMap<string,mixed>` |
-| Nullable title/target | `Psl\Option\Option<string>` (or PHP native `?string`) |
-| Include stack in PreprocessorReader | `Psl\DataStructure\Stack<IncludeContext>` |
-| Conditional stack in PreprocessorReader | `Psl\DataStructure\Stack<ConditionalContext>` |
+| `blocks[]` on AbstractBlock | `list<AbstractBlock>` (PHP array with PHPDoc `@var list<AbstractBlock>`) |
+| `items[]` on AsciiList | `list<ListItem>` |
+| `columns[]` on Table | `list<Table\Column>` |
+| `cells[]` on Table\Row | `list<Table\Cell>` |
+| `attributes` on AbstractNode | `array<string,mixed>` |
+| `attributes` on Document | `array<string,string|false>` (false = explicitly unset sentinel) |
+| Nullable title/target | `?string` (native) |
+| Include stack in PreprocessorReader | `\SplStack<IncludeContext>` (or typed array used as LIFO stack) |
+| Conditional stack in PreprocessorReader | `\SplStack<ConditionalContext>` |
 
-Note: `Psl\Tree` is **not** used to model the AST. The Ruby-style parent-reference
-model (each node holds a `$parent` pointer) is used instead, which matches the
-Asciidoctor architecture and makes `findBy()` traversal straightforward.
+Note: The AST is modelled with the Ruby-style parent-reference approach (each
+node holds a `$parent` pointer), which matches the Asciidoctor architecture and
+makes `findBy()` traversal straightforward.

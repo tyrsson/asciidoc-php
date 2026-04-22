@@ -26,9 +26,10 @@ compatibility.
 | [04-parser-component.md](04-parser-component.md) | Parser state machine, block detection order, delimiter map, list/table parsing |
 | [05-substitution-pipeline.md](05-substitution-pipeline.md) | Substitution pipeline diagram, regex catalog, passthrough extraction |
 | [06-html5-converter.md](06-html5-converter.md) | ConverterInterface, Html5Converter dispatch table, HTML output patterns |
-| [07-cli-interface.md](07-cli-interface.md) | CLI flags, invocation flow, GitHub Action integration |
+| [07-cli-interface.md](07-cli-interface.md) | CLI flags, invocation flow (async batch with TaskGroup), GitHub Action integration |
 | [08-attribute-system.md](08-attribute-system.md) | Document attribute precedence, built-in attributes, attribute list parsing |
 | [09-extension-system.md](09-extension-system.md) | Post-MVP extension system design |
+| [10-async-runtime.md](10-async-runtime.md) | TrueAsync integration: concurrency model, TaskGroup batch processing, Scope lifecycle |
 
 ---
 
@@ -36,8 +37,8 @@ compatibility.
 
 | Concern | Choice | Rationale |
 |---|---|---|
-| Language | PHP 8.4+ | Required by project; property hooks, enums, readonly |
-| Collections | `psl/php-standard-library` | Only production dependency; MutableVector/Map, Option, Stack |
+| Language | PHP 8.6+ | TrueAsync requires PHP 8.6; property hooks, enums, readonly |
+| Async runtime | `true-async/php-async` (TrueAsync 1.0) | Transparent coroutine scheduler — no colored functions; `spawn()`, `await()`, `Async\TaskGroup`, `Async\Scope` |
 | Testing | PHPUnit 13 | Already configured |
 | Static analysis | PHPStan level 10 | Already configured |
 | DI (integration) | Laminas ServiceManager | Stubs present; not a direct dep |
@@ -63,8 +64,11 @@ Autoloaded from `src/` per `composer.json`.
 - **Passthroughs extracted first** — before the substitution pipeline, restored after
 - **Reader uses a reverse-stack** — `array_pop` is O(1) for peek/consume
 - **Converters are stateless per call** — `convert(node)` is a pure function of node state
-- **PSL used throughout** — `MutableVector`, `MutableMap`, `Option`, `Stack` from PSL
-- **PHP 8.4 features freely used** — property hooks, asymmetric visibility, enums
+- **Native PHP collections throughout** — typed `array` with PHPDoc generics (`list<T>`, `array<K,V>`); `\SplStack` for include/conditional stacks
+- **PHP 8.6 features freely used** — property hooks, asymmetric visibility, enums
+- **Transparent async I/O** — TrueAsync coroutines; `include::` file reads, batch file processing, and future HTTP/DB operations yield automatically without colored functions
+- **Concurrency at the CLI boundary** — `Cli\Invoker` uses `Async\TaskGroup` to convert multiple `.adoc` files concurrently; each file's document graph is isolated (no shared mutable state)
+- **Structured concurrency** — all coroutines are owned by a `Scope` or `TaskGroup`; no fire-and-forget spawns
 
 ---
 

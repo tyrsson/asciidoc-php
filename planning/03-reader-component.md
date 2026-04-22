@@ -49,10 +49,10 @@ Reader
 
 PreprocessorReader extends Reader
   - document: Document
-  - includeStack: Psl\DataStructure\Stack<IncludeContext>
-  - maxIncludes: int                        (default: 64, hard limit for safety)
-  - includes: int                           (running count of resolved includes)
-  - conditionalStack: Psl\DataStructure\Stack<ConditionalContext>
+  - includeStack: \SplStack<IncludeContext>   (or typed array used as LIFO stack)
+  - maxIncludes: int                          (default: 64, hard limit for safety)
+  - includes: int                             (running count of resolved includes)
+  - conditionalStack: \SplStack<ConditionalContext>
   + __construct(document: Document, data: string|list<string>, cursor: Cursor)
   # processLine(line: string): string|null  (OVERRIDE — handles all directives)
   - handleAttributeEntry(line: string): bool
@@ -174,8 +174,8 @@ handleInclude(target: string, attributes: array): void
        if depth >= maxdepth: emit warning; return
        if $this->includes >= $this->maxIncludes: emit error; return
 
-  3. Read file: Psl\File\read(resolvedPath) → string
-     If file not found: emit warning; push error notice; return
+  3. Read file: file_get_contents(resolvedPath) → string|false
+     If false (file not found/unreadable): emit warning; push error notice; return
 
   4. Normalise line endings: replace \r\n and \r with \n
      Split to list<string>
@@ -306,11 +306,37 @@ flows through PathResolver before being executed.
 
 ---
 
-## PSL Usage in Reader
+## TrueAsync Interaction
 
-| Purpose | PSL Type |
+`PreprocessorReader` makes **no use of async primitives directly**. The
+concurrency benefit comes for free from TrueAsync's transparent I/O model:
+
+```
+handleInclude():
+  Step 3: file_get_contents(resolvedPath)
+           └── Under TrueAsync, file I/O automatically suspends the current
+               coroutine until the OS returns the data. Other coroutines
+               (i.e. other files being converted concurrently in the
+               Cli\Invoker TaskGroup) run during this suspension.
+               No code change required inside PreprocessorReader.
+```
+
+Key guarantees that make this safe:
+- Each `PreprocessorReader` instance is owned by a single `Document` (per-file)
+- `$this->lines`, `$this->cursor`, and the include/conditional stacks are
+  **never shared** across coroutines
+- The `PathResolver::resolve()` pure function is re-entrant with no side effects
+- Only `Document::setAttribute()` (called from `handleAttributeEntry()`) mutates
+  shared-ish state, but each Document is its own instance — no cross-coroutine
+  sharing occurs
+
+---
+
+## Native PHP in Reader
+
+| Purpose | Implementation |
 |---|---|
-| Include stack | `Psl\DataStructure\Stack<IncludeContext>` |
-| Conditional stack | `Psl\DataStructure\Stack<ConditionalContext>` |
-| File reading | `Psl\File\read(string $path): string` |
-| Path assertions | `Psl\Type\string()->assert($value)` |
+| Include stack | `\SplStack` (or typed `array` + `array_push`/`array_pop` as LIFO) |
+| Conditional stack | `\SplStack` (same pattern) |
+| File reading | `file_get_contents(string $path)` |
+| Path assertions | Native `is_string()` / parameter type declarations |

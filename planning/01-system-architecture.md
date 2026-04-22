@@ -118,7 +118,7 @@ Webware\AsciidocPhp\
 │
 ├── Cli\
 │   ├── Options                      (value object; static parse(argv))
-│   ├── Invoker                      (orchestrates per-file conversion)
+│   ├── Invoker                      (orchestrates concurrent per-file conversion via Async\TaskGroup)
 │   └── Application                  (entry point; wraps Invoker; returns exit code)
 │
 ├── Logging\
@@ -155,8 +155,12 @@ Step 2: CLI Parsing
 
 Step 3: Invocation
   Cli\Invoker::invoke()
-  → foreach inputFile: Asciidoc::convertFile(path, options)
-       │
+  → $group = new Async\TaskGroup()
+    foreach inputFile: $group->spawn(fn() => $this->convertFile($inputFile, $outPath))
+    $group->awaitCompletion()     ← all files converted concurrently
+       │                          (each file runs in its own coroutine;
+       │                           I/O in include:: handling suspends
+       │                           automatically, yielding to other files)
        ▼
 
 Step 4: Document Initialisation
@@ -264,7 +268,9 @@ Step 12: Output
 | Inline nodes created during conversion | Avoids a two-pass AST; lazy creation per Ruby impl |
 | Passthroughs extracted before pipeline | Prevents double-processing of already-literal content |
 | Reader uses reversed array as stack | `array_pop` O(1); `array_push` O(1); no array_shift needed |
-| PSL MutableVector for blocks[] | Type-safe, iterable, countable; avoids raw arrays |
-| PSL MutableMap for attributes | Type-safe key-value store; replaces Ruby Hash |
-| PHP 8.4 enums for SafeMode/ContentModel | Exhaustive matching; no invalid states |
+| Native `list<AbstractBlock>` for blocks[] | PHP typed arrays + PHPDoc generics are sufficient; no external dep needed |
+| Native `array<string,string|false>` for attributes | Simpler than an object wrapper; attribute counts are small; direct `isset`/`[]` access is fastest |
+| PHP 8.6 enums for SafeMode/ContentModel | Exhaustive matching; no invalid states |
 | Converters stateless | Each convert call is idempotent; no inter-call coupling |
+| Async concurrency at CLI boundary only | `Cli\Invoker` uses `Async\TaskGroup` for parallel file conversion; parser/converter/substitutors are synchronous by design — TrueAsync transparently suspends on I/O (file reads, `include::`) without any code changes inside them |
+| Each Document is isolated | No shared mutable state between concurrent conversions; `Document`, `PreprocessorReader`, and `Html5Converter` are all per-file instances — safe to run in parallel coroutines |

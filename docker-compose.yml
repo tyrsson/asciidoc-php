@@ -1,0 +1,15 @@
+services:
+    php:
+        build: docker/php
+        volumes:
+            - '.:/workspaces/asciidoc-php'
+            - './docker/php/conf.d/xdebug.ini:/etc/php.d/xdebug.ini'
+            - './docker/php/conf.d/error_reporting.ini:/etc/php.d/error_reporting.ini'
+        expose:
+            - 8080
+        ports:
+            - 8080:8080
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        restart: unless-stopped
+        

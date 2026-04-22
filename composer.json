@@ -20,15 +20,14 @@
     "config": {
         "sort-packages": true,
         "platform": {
-            "php": "8.4.99"
+            "php": "8.6.99"
         },
         "allow-plugins": {
             "composer/package-versions-deprecated": true
         }
     },
     "require": {
-        "php": "~8.4.0 || ~8.5.0",
-        "php-standard-library/php-standard-library": "^6.1"
+        "php": "~8.4.0 || ~8.5.0 || ~8.6.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",

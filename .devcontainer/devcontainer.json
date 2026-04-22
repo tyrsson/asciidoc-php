@@ -19,7 +19,8 @@
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"features": {
 		"ghcr.io/devcontainers-extra/features/composer:1": {},
-		"ghcr.io/devcontainers/features/git:1": {}
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/braun-daniel/devcontainer-features/asciidoc:1": {}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
@@ -45,7 +46,11 @@
 			"extensions": [
 				"xdebug.php-debug",
 				"bmewburn.vscode-intelephense-client",
-				"jaguadoromero.vscode-php-create-class"
+				"jaguadoromero.vscode-php-create-class",
+				// AsciiDoc support — uses the installed asciidoctor gem for live
+				// preview. Lets you compare .adoc source against our PHP-generated
+				// HTML output side-by-side during development and testing.
+				"asciidoctor.asciidoctor-vscode"
 			],
 			"launch.configurations": [
 				{

@@ -1,0 +1,64 @@
+= AsciiDoc PHP Integration Guide
+Author Name <author@example.com>
+v1.0, 2024-01-01
+:toc:
+:numbered:
+:source-highlighter: highlight.js
+:icons: font
+:description: Full integration fixture for testing AsciiDoc conversion.
+
+This is the preamble paragraph.
+
+== Introduction
+
+This section introduces the document.
+
+=== Sub-section
+
+A nested section with *bold*, _italic_, and `monospaced` inline formatting.
+
+== Lists
+
+=== Unordered List
+
+* Item one
+* Item two
+* Item three
+
+=== Ordered List
+
+. First item
+. Second item
+. Third item
+
+== Source Code
+
+[source,php]
+----
+<?php
+echo "Hello, World!\n";
+----
+
+== Tables
+
+[cols="1,2,3"]
+|===
+| Name | Role | Department
+
+| Alice | Developer | Engineering
+| Bob   | Designer  | Creative
+|===
+
+== Admonitions
+
+NOTE: This is a note admonition.
+
+TIP: This is a tip admonition.
+
+WARNING: This is a warning admonition.
+
+== Thematic Break
+
+'''
+
+== End

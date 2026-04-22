@@ -1,0 +1,70 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Wraps an embedded AsciiDoc fragment in a minimal standalone HTML shell
+ * with the Asciidoctor CSS, Font Awesome, and highlight.js injected,
+ * so the fragment can be previewed in a browser without a parent page.
+ *
+ * Usage:
+ *   php bin/render-preview <input.adoc> <output.html>
+ */
+
+foreach ([
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+] as $autoload) {
+    if (file_exists($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+use Webware\AsciidocPhp\Asciidoc;
+
+if ($argc < 3) {
+    fwrite(STDERR, "Usage: php bin/render-preview <input.adoc> <output.html>\n");
+    exit(1);
+}
+
+$inputFile  = $argv[1];
+$outputFile = $argv[2];
+
+$opts = [
+    'header_footer'      => false,
+    'source-highlighter' => 'highlight.js',
+    'icons'              => 'font',
+];
+
+$fragment = Asciidoc::convertFile($inputFile, $opts);
+
+$cssPath = __DIR__ . '/../resources/css/asciidoctor.css';
+$css     = (string) file_get_contents($cssPath);
+
+$faUrl    = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css';
+$hljsBase = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0';
+
+$html = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embedded Preview</title>
+<style>
+{$css}</style>
+<link rel="stylesheet" href="{$faUrl}">
+<link rel="stylesheet" href="{$hljsBase}/styles/github.min.css">
+</head>
+<body class="article">
+{$fragment}
+<script src="{$hljsBase}/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>
+HTML;
+
+file_put_contents($outputFile, $html);
+echo "Written: {$outputFile}\n";

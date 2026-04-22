@@ -1,0 +1,20 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Support running directly from a git clone (dev) or from a vendor install.
+foreach ([
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+] as $autoload) {
+    if (file_exists($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+use Webware\AsciidocPhp\Cli\Application;
+
+/** @var list<string> $argv */
+exit((new Application($argv))->run());

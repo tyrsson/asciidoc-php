@@ -1,0 +1,180 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Benchmark corpus generator.
+ *
+ * Reads seed files from test/benchmark/seeds/ and produces N variations of
+ * each in test/benchmark/corpus/.
+ *
+ * Usage:
+ *   php bin/generate-benchmark-corpus [--count=N] [--seeds-dir=PATH] [--corpus-dir=PATH]
+ *
+ * Options:
+ *   --count=N         Number of variations per seed (default: 10)
+ *   --seeds-dir=PATH  Path to seed directory (default: test/benchmark/seeds)
+ *   --corpus-dir=PATH Path to corpus output directory (default: test/benchmark/corpus)
+ */
+
+$options = getopt('', ['count:', 'seeds-dir:', 'corpus-dir:']);
+
+$count     = (int) ($options['count']      ?? 10);
+$seedsDir  = $options['seeds-dir']          ?? dirname(__DIR__) . '/test/benchmark/seeds';
+$corpusDir = $options['corpus-dir']         ?? dirname(__DIR__) . '/test/benchmark/corpus';
+
+if ($count < 1) {
+    fwrite(STDERR, "Error: --count must be at least 1\n");
+    exit(1);
+}
+
+if (! is_dir($seedsDir)) {
+    fwrite(STDERR, "Error: seeds directory not found: {$seedsDir}\n");
+    exit(1);
+}
+
+if (! is_dir($corpusDir) && ! mkdir($corpusDir, 0755, true)) {
+    fwrite(STDERR, "Error: cannot create corpus directory: {$corpusDir}\n");
+    exit(1);
+}
+
+$seeds = glob($seedsDir . '/*.adoc');
+if ($seeds === false || $seeds === []) {
+    fwrite(STDERR, "Error: no .adoc seed files found in {$seedsDir}\n");
+    exit(1);
+}
+
+$generated = 0;
+
+foreach ($seeds as $seedPath) {
+    $seedName = basename($seedPath, '.adoc');
+    $content  = file_get_contents($seedPath);
+
+    if ($content === false) {
+        fwrite(STDERR, "Warning: cannot read seed file: {$seedPath}\n");
+        continue;
+    }
+
+    for ($i = 1; $i <= $count; $i++) {
+        $variant = generateVariant($content, $seedName, $i);
+        $outFile = sprintf('%s/%s-%02d.adoc', $corpusDir, $seedName, $i);
+
+        if (file_put_contents($outFile, $variant) === false) {
+            fwrite(STDERR, "Warning: cannot write corpus file: {$outFile}\n");
+            continue;
+        }
+
+        $generated++;
+    }
+}
+
+$total = count($seeds);
+printf(
+    "Generated %d corpus files (%d seeds × %d variants each).\n",
+    $generated,
+    $total,
+    $count,
+);
+
+// ---------------------------------------------------------------------------
+
+/**
+ * Produce a deterministic variation of a seed file.
+ *
+ * Strategies:
+ *  - Bump the document version number so each file has a unique revision header.
+ *  - Append a variant number to the document title.
+ *  - Insert a small unique paragraph at the top of the body so parse work varies.
+ */
+function generateVariant(string $content, string $seedName, int $variant): string
+{
+    // 1. Update the revision line (v1.0.0 → v1.0.N) if present.
+    $content = preg_replace(
+        '/^(v\d+\.\d+\.\d+)(,.*)$/m',
+        "v1.0.{$variant}$2",
+        $content,
+        1,
+    ) ?? $content;
+
+    // 2. Append variant number to the document title (first = line).
+    $content = preg_replace(
+        '/^(= .+)$/m',
+        "$1 [Variant {$variant}]",
+        $content,
+        1,
+    ) ?? $content;
+
+    // 3. Insert a variant-specific paragraph after the first blank line
+    //    following the document header block (after the attributes).
+    $variantNote = buildVariantNote($seedName, $variant);
+    $content     = insertAfterHeader($content, $variantNote);
+
+    return $content;
+}
+
+/**
+ * Build a small AsciiDoc paragraph unique to this variant.
+ * Uses different prose/code to exercise varied parser paths.
+ */
+function buildVariantNote(string $seedName, int $variant): string
+{
+    $notes = [
+        "This is corpus variant *{$variant}* of the `{$seedName}` seed, generated to exercise the asynchronous document parser. Each variant contains slightly different content to avoid identical parse trees.",
+        "Variant *{$variant}*: this copy was produced by the benchmark corpus generator. It is used to measure throughput of the AsciiDoc-PHP converter pipeline.",
+        "Generated document *{$variant}*. The corpus runner will time how long the full parse-and-convert cycle takes for this variation of `{$seedName}`.",
+        "Benchmark variant *{$variant}* — parse the following content and measure the total elapsed time from file read to HTML output.",
+        "This is variant *{$variant}* / {$variant} of the `{$seedName}` benchmark fixture. Slight differences in content ensure the parser cannot short-circuit via caching.",
+    ];
+
+    // Rotate through notes based on variant number
+    $note = $notes[($variant - 1) % count($notes)];
+
+    // Every 3rd variant, add a small code snippet for extra variety
+    if ($variant % 3 === 0) {
+        $hex    = str_pad(dechex($variant * 0x1f3 + 0xabc), 6, '0', STR_PAD_LEFT);
+        $note  .= "\n\n[source,php]\n----\n// Corpus variant: {$variant} (0x{$hex})\n\$result = Benchmark::run(" . var_export($seedName, true) . ", variant: {$variant});\n----";
+    }
+
+    return $note;
+}
+
+/**
+ * Insert content after the AsciiDoc document header block.
+ *
+ * The header block ends at the first non-attribute, non-blank line after the
+ * initial title/author/revision/attribute lines.
+ */
+function insertAfterHeader(string $content, string $insertion): string
+{
+    $lines  = explode("\n", $content);
+    $inHeader = true;
+    $insertAt = 0;
+
+    for ($i = 0; $i < count($lines); $i++) {
+        $line = $lines[$i];
+
+        // Title line (starts with =)
+        if ($i === 0 && str_starts_with($line, '= ')) {
+            continue;
+        }
+
+        // Attribute lines (:key: value), author line, revision line, blank lines
+        if ($inHeader && (
+            str_starts_with($line, ':') ||
+            $line === '' ||
+            ($i <= 3) // author/revision in first few lines
+        )) {
+            $insertAt = $i + 1;
+            continue;
+        }
+
+        // First non-header content line — insert before this
+        $insertAt = $i;
+        break;
+    }
+
+    array_splice($lines, $insertAt, 0, ['', $insertion, '']);
+
+    return implode("\n", $lines);
+}

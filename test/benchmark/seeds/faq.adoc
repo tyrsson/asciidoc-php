@@ -1,0 +1,223 @@
+= Webware Framework: Frequently Asked Questions
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:icons: font
+:description: Answers to the most commonly asked questions about Webware Framework.
+
+This document answers the questions most frequently raised by users on the
+community forum, GitHub issues, and our support channels.
+
+== General
+
+=== What is Webware Framework?
+
+Webware is a modern, asynchronous PHP framework built for high-throughput
+REST APIs and web applications. It targets PHP 8.4+ and is designed with
+static analysis (PHPStan level 10) and testability as first-class concerns.
+
+=== How does Webware compare to Laravel or Symfony?
+
+Webware is not a full-stack MVC framework. It is a minimal, composable toolkit:
+
+[cols="1,1,1,1",options="header"]
+|===
+| Feature           | Webware | Laravel | Symfony
+| ORM               | Optional| Built-in| Doctrine
+| Template engine   | Optional| Blade   | Twig
+| CLI generator     | Basic   | Artisan | Console
+| Async I/O         | Native  | via Octane| No
+| Minimum PHP       | 8.4     | 8.2     | 8.2
+| PSR compliance    | Full    | Partial | Full
+|===
+
+=== Is Webware production-ready?
+
+`v1.x` is stable and used in production by several organisations. The API is
+frozen for the `1.x` lifecycle. Breaking changes will only appear in `2.0`.
+
+=== Where can I get help?
+
+* https://github.com/webware/framework/discussions[GitHub Discussions]
+* https://discord.gg/webware[Discord Community]
+* https://webware.io/docs[Official Documentation]
+
+== Installation & Setup
+
+=== Why does `composer create-project` fail?
+
+The most common causes:
+
+[horizontal]
+PHP version mismatch:: Ensure `php --version` reports 8.4+.
+Missing extensions:: Run `php -m | grep -E 'json|mbstring|pdo'` to check.
+Outdated Composer:: Run `composer self-update` to upgrade to 2.x.
+
+=== Can I install without Composer?
+
+Not officially. Webware relies on Composer's autoloader and PSR-4 class
+resolution. A bundled-zip download is available for air-gapped environments
+but still requires Composer to set up the autoloader.
+
+=== How do I change the default port?
+
+[source,bash]
+----
+php bin/webware serve --port=9090 --host=0.0.0.0
+----
+
+Or set `SERVER_PORT` in your `.env` file.
+
+== Routing
+
+=== How do I define optional route parameters?
+
+Wrap the segment in `?`:
+
+[source,php]
+----
+$router->get('/posts/{id?}', [PostController::class, 'index']);
+----
+
+The parameter defaults to `null` when omitted.
+
+=== Can I group routes under a prefix?
+
+[source,php]
+----
+$router->group('/api/v1', static function (Router $r) {
+    $r->get('/users',    [UserController::class, 'index']);
+    $r->post('/users',   [UserController::class, 'store']);
+    $r->get('/users/{id}', [UserController::class, 'show']);
+}, middleware: [AuthMiddleware::class, RateLimitMiddleware::class]);
+----
+
+=== How do I name a route?
+
+[source,php]
+----
+$router->get('/dashboard', [DashboardController::class, 'index'])
+       ->name('dashboard');
+----
+
+Generate a URL: `url('dashboard')` returns `/dashboard`.
+
+== Authentication
+
+=== What authentication methods does Webware support?
+
+* JWT (JSON Web Token) via the `webware/auth-jwt` package
+* Session-based auth via `webware/auth-session`
+* OAuth2 via `webware/auth-oauth2` (supports Google, GitHub, custom providers)
+* API key via `webware/auth-apikey`
+
+=== How do I protect a route?
+
+[source,php]
+----
+$router->get('/profile', [ProfileController::class, 'show'])
+       ->middleware(AuthMiddleware::class);
+----
+
+=== Can I use multiple auth guards?
+
+Yes. Define guards in `config/auth.php` and reference them:
+
+[source,php]
+----
+$router->group('/admin', static function (Router $r) {
+    $r->get('/users', [AdminUserController::class, 'index']);
+}, middleware: [AdminGuardMiddleware::class]);
+----
+
+== Database
+
+=== Does Webware include an ORM?
+
+Webware itself does not ship an ORM. Recommended integrations:
+
+[cols="2,3",options="header"]
+|===
+| Package                   | Description
+| `cycle/orm`               | ActiveRecord + DataMapper for PHP 8+
+| `doctrine/orm`            | Mature DataMapper ORM
+| `illuminate/database`     | Laravel Eloquent (standalone)
+| `atlas/orm`               | Table-based ORM, no inheritance magic
+|===
+
+=== How do I run raw queries?
+
+[source,php]
+----
+$db  = $container->get(Connection::class);
+$rows = $db->query('SELECT * FROM users WHERE active = ?', [1]);
+----
+
+== Performance
+
+=== How do I enable opcode caching?
+
+Add to `php.ini`:
+
+[source,ini]
+----
+opcache.enable=1
+opcache.memory_consumption=256
+opcache.max_accelerated_files=20000
+opcache.validate_timestamps=0   ; disable in production
+----
+
+=== What is the recommended PHP-FPM pool configuration?
+
+[source,ini]
+----
+pm = dynamic
+pm.max_children       = 50
+pm.start_servers      = 10
+pm.min_spare_servers  = 5
+pm.max_spare_servers  = 20
+pm.max_requests       = 500
+----
+
+TIP: Set `pm.max_requests` to a non-zero value to reclaim memory from
+long-lived workers.
+
+== Troubleshooting
+
+=== I get "Class not found" errors after adding a new file
+
+Run `composer dump-autoload` to rebuild the class map.
+
+=== Routes return 404 even though they are defined
+
+Check your web server rewrite rules. For Apache:
+
+[source,apacheconf]
+----
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
+----
+
+For Nginx:
+
+[source,nginx]
+----
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+----
+
+=== Environment variables are not loading
+
+Ensure `.env` is in the project root and is not committed to version control.
+Add it to `.gitignore`:
+
+[source,text]
+----
+.env
+.env.local
+----
+
+CAUTION: Never commit `.env` files containing secrets or database passwords.

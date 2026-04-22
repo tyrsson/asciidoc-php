@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="asciidoc-php 0.1.0">
-<title>AsciiDoc PHP Integration Guide</title>
+<title>Webware Framework: Frequently Asked Questions [Variant 1]</title>
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
 /* Uncomment the following line when using as a custom stylesheet */
@@ -431,171 +431,481 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
 </head>
-<body class="article toc2 toc-left">
-<div id="toc" class="toc2">
+<body class="article">
+<div id="header">
+<h1>Webware Framework: Frequently Asked Questions [Variant 1]</h1>
+<div class="details"><span class="author">Webware Team</span></div>
+<div class="details"><span class="revdate">2026-01-01</span></div>
+<div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_introduction">Introduction</a>
+<li><a href="#_general">General</a>
 <ul class="sectlevel2">
-<li><a href="#_sub_section">Sub-section</a></li>
+<li><a href="#_what_is_webware_framework">What is Webware Framework?</a></li>
+<li><a href="#_how_does_webware_compare_to_laravel_or_symfony">How does Webware compare to Laravel or Symfony?</a></li>
+<li><a href="#_is_webware_production_ready">Is Webware production-ready?</a></li>
+<li><a href="#_where_can_i_get_help">Where can I get help?</a></li>
 </ul>
 </li>
-<li><a href="#_lists">Lists</a>
+<li><a href="#_installation_setup">Installation &amp; Setup</a>
 <ul class="sectlevel2">
-<li><a href="#_unordered_list">Unordered List</a></li>
-<li><a href="#_ordered_list">Ordered List</a></li>
+<li><a href="#_why_does_composer_create_project_fail">Why does `composer create-project` fail?</a></li>
+<li><a href="#_can_i_install_without_composer">Can I install without Composer?</a></li>
+<li><a href="#_how_do_i_change_the_default_port">How do I change the default port?</a></li>
 </ul>
 </li>
-<li><a href="#_source_code">Source Code</a></li>
-<li><a href="#_tables">Tables</a></li>
-<li><a href="#_admonitions">Admonitions</a></li>
-<li><a href="#_thematic_break">Thematic Break</a></li>
-<li><a href="#_end">End</a></li>
+<li><a href="#_routing">Routing</a>
+<ul class="sectlevel2">
+<li><a href="#_how_do_i_define_optional_route_parameters">How do I define optional route parameters?</a></li>
+<li><a href="#_can_i_group_routes_under_a_prefix">Can I group routes under a prefix?</a></li>
+<li><a href="#_how_do_i_name_a_route">How do I name a route?</a></li>
+</ul>
+</li>
+<li><a href="#_authentication">Authentication</a>
+<ul class="sectlevel2">
+<li><a href="#_what_authentication_methods_does_webware_support">What authentication methods does Webware support?</a></li>
+<li><a href="#_how_do_i_protect_a_route">How do I protect a route?</a></li>
+<li><a href="#_can_i_use_multiple_auth_guards">Can I use multiple auth guards?</a></li>
+</ul>
+</li>
+<li><a href="#_database">Database</a>
+<ul class="sectlevel2">
+<li><a href="#_does_webware_include_an_orm">Does Webware include an ORM?</a></li>
+<li><a href="#_how_do_i_run_raw_queries">How do I run raw queries?</a></li>
+</ul>
+</li>
+<li><a href="#_performance">Performance</a>
+<ul class="sectlevel2">
+<li><a href="#_how_do_i_enable_opcode_caching">How do I enable opcode caching?</a></li>
+<li><a href="#_what_is_the_recommended_php_fpm_pool_configuration">What is the recommended PHP-FPM pool configuration?</a></li>
+</ul>
+</li>
+<li><a href="#_troubleshooting">Troubleshooting</a>
+<ul class="sectlevel2">
+<li><a href="#_i_get_class_not_found_errors_after_adding_a_new_file">I get &quot;Class not found&quot; errors after adding a new file</a></li>
+<li><a href="#_routes_return_404_even_though_they_are_defined">Routes return 404 even though they are defined</a></li>
+<li><a href="#_environment_variables_are_not_loading">Environment variables are not loading</a></li>
+</ul>
+</li>
 </ul>
 </div>
-<div id="header">
-<h1>AsciiDoc PHP Integration Guide</h1>
-<div class="details"><span class="author">Author Name</span></div>
-<div class="details"><span class="revdate">2024-01-01</span></div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is the preamble paragraph.</p>
+<p>This is corpus variant <strong>1</strong> of the <code>faq</code> seed, generated to exercise the asynchronous document parser. Each variant contains slightly different content to avoid identical parse trees.</p>
+</div>
+<div class="paragraph">
+<p>This document answers the questions most frequently raised by users on the
+community forum, GitHub issues, and our support channels.</p>
 </div>
 </div>
 </div>
-<div class="sect1" id="_introduction">
-<h2>Introduction</h2>
+<div class="sect1" id="_general">
+<h2>General</h2>
+<div class="sectionbody">
+<div class="sect2" id="_what_is_webware_framework">
+<h3>What is Webware Framework?</h3>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section introduces the document.</p>
+<p>Webware is a modern, asynchronous PHP framework built for high-throughput
+REST APIs and web applications. It targets PHP 8.4+ and is designed with
+static analysis (PHPStan level 10) and testability as first-class concerns.</p>
 </div>
-<div class="sect2" id="_sub_section">
-<h3>Sub-section</h3>
+</div>
+</div>
+<div class="sect2" id="_how_does_webware_compare_to_laravel_or_symfony">
+<h3>How does Webware compare to Laravel or Symfony?</h3>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A nested section with <strong>bold</strong>, <em>italic</em>, and <code>monospaced</code> inline formatting.</p>
+<p>Webware is not a full-stack MVC framework. It is a minimal, composable toolkit:</p>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_lists">
-<h2>Lists</h2>
-<div class="sectionbody">
-<div class="sect2" id="_unordered_list">
-<h3>Unordered List</h3>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>Item one</p>
-</li>
-<li>
-<p>Item two</p>
-</li>
-<li>
-<p>Item three</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect2" id="_ordered_list">
-<h3>Ordered List</h3>
-<div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>First item</p>
-</li>
-<li>
-<p>Second item</p>
-</li>
-<li>
-<p>Third item</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_source_code">
-<h2>Source Code</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
-echo &quot;Hello, World!\n&quot;;</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_tables">
-<h2>Tables</h2>
-<div class="sectionbody">
 <table class="tableblock frame-all grid-all" style="width:100%">
 <colgroup>
-<col style="width: 16.67%;">
-<col style="width: 33.33%;">
-<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
 </colgroup>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Name</p>
+<p class="tableblock">Feature</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Role</p>
+<p class="tableblock">Webware</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Department</p>
-</td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Alice</p>
+<p class="tableblock">Laravel</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Developer</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Engineering</p>
+<p class="tableblock">Symfony</p>
 </td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Bob</p>
+<p class="tableblock">ORM</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Designer</p>
+<p class="tableblock">Optional</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Creative</p>
+<p class="tableblock">Built-in</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Doctrine</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Template engine</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Optional</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Blade</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Twig</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">CLI generator</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Basic</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Artisan</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Console</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Async I/O</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Native</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">via Octane</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">No</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Minimum PHP</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">8.4</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">8.2</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">8.2</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">PSR compliance</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Full</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Partial</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Full</p>
 </td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<div class="sect1" id="_admonitions">
-<h2>Admonitions</h2>
+<div class="sect2" id="_is_webware_production_ready">
+<h3>Is Webware production-ready?</h3>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
+<div class="paragraph">
+<p><code>v1.x</code> is stable and used in production by several organisations. The API is
+frozen for the <code>1.x</code> lifecycle. Breaking changes will only appear in <code>2.0</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect2" id="_where_can_i_get_help">
+<h3>Where can I get help?</h3>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>https://github.com/webware/framework/discussions[GitHub Discussions]</p>
+</li>
+<li>
+<p>https://discord.gg/webware[Discord Community]</p>
+</li>
+<li>
+<p>https://webware.io/docs[Official Documentation]</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_installation_setup">
+<h2>Installation &amp; Setup</h2>
+<div class="sectionbody">
+<div class="sect2" id="_why_does_composer_create_project_fail">
+<h3>Why does `composer create-project` fail?</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The most common causes:</p>
+</div>
+<div class="paragraph">
+<p>PHP version mismatch:: Ensure <code>php --version</code> reports 8.4+.
+Missing extensions:: Run <code>php -m | grep -E &#039;json|mbstring|pdo&#039;</code> to check.
+Outdated Composer:: Run <code>composer self-update</code> to upgrade to 2.x.</p>
+</div>
+</div>
+</div>
+<div class="sect2" id="_can_i_install_without_composer">
+<h3>Can I install without Composer?</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Not officially. Webware relies on Composer&#039;s autoloader and PSR-4 class
+resolution. A bundled-zip download is available for air-gapped environments
+but still requires Composer to set up the autoloader.</p>
+</div>
+</div>
+</div>
+<div class="sect2" id="_how_do_i_change_the_default_port">
+<h3>How do I change the default port?</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware serve --port=9090 --host=0.0.0.0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or set <code>SERVER_PORT</code> in your <code>.env</code> file.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_routing">
+<h2>Routing</h2>
+<div class="sectionbody">
+<div class="sect2" id="_how_do_i_define_optional_route_parameters">
+<h3>How do I define optional route parameters?</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Wrap the segment in <code>?</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/posts/{id?}&#039;, [PostController::class, &#039;index&#039;]);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The parameter defaults to <code>null</code> when omitted.</p>
+</div>
+</div>
+</div>
+<div class="sect2" id="_can_i_group_routes_under_a_prefix">
+<h3>Can I group routes under a prefix?</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;group(&#039;/api/v1&#039;, static function (Router $r) {
+    $r-&gt;get(&#039;/users&#039;,    [UserController::class, &#039;index&#039;]);
+    $r-&gt;post(&#039;/users&#039;,   [UserController::class, &#039;store&#039;]);
+    $r-&gt;get(&#039;/users/{id}&#039;, [UserController::class, &#039;show&#039;]);
+}, middleware: [AuthMiddleware::class, RateLimitMiddleware::class]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_how_do_i_name_a_route">
+<h3>How do I name a route?</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/dashboard&#039;, [DashboardController::class, &#039;index&#039;])
+       -&gt;name(&#039;dashboard&#039;);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Generate a URL: <code>url(&#039;dashboard&#039;)</code> returns <code>/dashboard</code>.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_authentication">
+<h2>Authentication</h2>
+<div class="sectionbody">
+<div class="sect2" id="_what_authentication_methods_does_webware_support">
+<h3>What authentication methods does Webware support?</h3>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>JWT (JSON Web Token) via the <code>webware/auth-jwt</code> package</p>
+</li>
+<li>
+<p>Session-based auth via <code>webware/auth-session</code></p>
+</li>
+<li>
+<p>OAuth2 via <code>webware/auth-oauth2</code> (supports Google, GitHub, custom providers)</p>
+</li>
+<li>
+<p>API key via <code>webware/auth-apikey</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2" id="_how_do_i_protect_a_route">
+<h3>How do I protect a route?</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/profile&#039;, [ProfileController::class, &#039;show&#039;])
+       -&gt;middleware(AuthMiddleware::class);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_can_i_use_multiple_auth_guards">
+<h3>Can I use multiple auth guards?</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Yes. Define guards in <code>config/auth.php</code> and reference them:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;group(&#039;/admin&#039;, static function (Router $r) {
+    $r-&gt;get(&#039;/users&#039;, [AdminUserController::class, &#039;index&#039;]);
+}, middleware: [AdminGuardMiddleware::class]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_database">
+<h2>Database</h2>
+<div class="sectionbody">
+<div class="sect2" id="_does_webware_include_an_orm">
+<h3>Does Webware include an ORM?</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Webware itself does not ship an ORM. Recommended integrations:</p>
+</div>
+<table class="tableblock frame-all grid-all" style="width:100%">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
 <tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Package</p>
 </td>
-<td class="content">
-This is a note admonition.</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Description</p>
+</td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`cycle/orm`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">ActiveRecord + DataMapper for PHP 8+</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`doctrine/orm`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Mature DataMapper ORM</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`illuminate/database`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Laravel Eloquent (standalone)</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`atlas/orm`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Table-based ORM, no inheritance magic</p>
+</td>
+</tr>
+</tbody>
 </table>
+</div>
+</div>
+<div class="sect2" id="_how_do_i_run_raw_queries">
+<h3>How do I run raw queries?</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$db  = $container-&gt;get(Connection::class);
+$rows = $db-&gt;query(&#039;SELECT * FROM users WHERE active = ?&#039;, [1]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_performance">
+<h2>Performance</h2>
+<div class="sectionbody">
+<div class="sect2" id="_how_do_i_enable_opcode_caching">
+<h3>How do I enable opcode caching?</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Add to <code>php.ini</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ini hljs" data-lang="ini">opcache.enable=1
+opcache.memory_consumption=256
+opcache.max_accelerated_files=20000
+opcache.validate_timestamps=0   ; disable in production</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_what_is_the_recommended_php_fpm_pool_configuration">
+<h3>What is the recommended PHP-FPM pool configuration?</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ini hljs" data-lang="ini">pm = dynamic
+pm.max_children       = 50
+pm.start_servers      = 10
+pm.min_spare_servers  = 5
+pm.max_spare_servers  = 20
+pm.max_requests       = 500</code></pre>
+</div>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -604,32 +914,78 @@ This is a note admonition.</td>
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-This is a tip admonition.</td>
+Set <code>pm.max_requests</code> to a non-zero value to reclaim memory from
+long-lived workers.</td>
 </tr>
 </table>
 </div>
-<div class="admonitionblock warning">
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_troubleshooting">
+<h2>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2" id="_i_get_class_not_found_errors_after_adding_a_new_file">
+<h3>I get &quot;Class not found&quot; errors after adding a new file</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Run <code>composer dump-autoload</code> to rebuild the class map.</p>
+</div>
+</div>
+</div>
+<div class="sect2" id="_routes_return_404_even_though_they_are_defined">
+<h3>Routes return 404 even though they are defined</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Check your web server rewrite rules. For Apache:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-apacheconf hljs" data-lang="apacheconf">RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For Nginx:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-nginx hljs" data-lang="nginx">location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_environment_variables_are_not_loading">
+<h3>Environment variables are not loading</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Ensure <code>.env</code> is in the project root and is not committed to version control.
+Add it to <code>.gitignore</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-text hljs" data-lang="text">.env
+.env.local</code></pre>
+</div>
+</div>
+<div class="admonitionblock caution">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
+<i class="fa icon-caution" title="Caution"></i>
 </td>
 <td class="content">
-This is a warning admonition.</td>
+Never commit <code>.env</code> files containing secrets or database passwords.</td>
 </tr>
 </table>
 </div>
 </div>
 </div>
-<div class="sect1" id="_thematic_break">
-<h2>Thematic Break</h2>
-<div class="sectionbody">
-<hr>
-</div>
-</div>
-<div class="sect1" id="_end">
-<h2>End</h2>
-<div class="sectionbody">
 </div>
 </div>
 </div>
@@ -637,7 +993,5 @@ This is a warning admonition.</td>
 <div id="footer-text">
 </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
-<script>hljs.highlightAll()</script>
 </body>
 </html>

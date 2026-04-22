@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="asciidoc-php 0.1.0">
-<title>AsciiDoc PHP Integration Guide</title>
+<title>Webware Framework: Routing Guide [Variant 3]</title>
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
 /* Uncomment the following line when using as a custom stylesheet */
@@ -433,180 +433,580 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
 </head>
-<body class="article toc2 toc-left">
-<div id="toc" class="toc2">
+<body class="article">
+<div id="header">
+<h1>Webware Framework: Routing Guide [Variant 3]</h1>
+<div class="details"><span class="author">Webware Team</span></div>
+<div class="details"><span class="revdate">2026-01-01</span></div>
+<div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_introduction">Introduction</a>
+<li><a href="#_basic_routes">Basic Routes</a>
 <ul class="sectlevel2">
-<li><a href="#_sub_section">Sub-section</a></li>
+<li><a href="#_http_verbs">HTTP Verbs</a></li>
+<li><a href="#_multiple_verbs_on_one_route">Multiple Verbs on One Route</a></li>
 </ul>
 </li>
-<li><a href="#_lists">Lists</a>
+<li><a href="#_route_parameters">Route Parameters</a>
 <ul class="sectlevel2">
-<li><a href="#_unordered_list">Unordered List</a></li>
-<li><a href="#_ordered_list">Ordered List</a></li>
+<li><a href="#_required_parameters">Required Parameters</a></li>
+<li><a href="#_optional_parameters">Optional Parameters</a></li>
+<li><a href="#_parameter_constraints">Parameter Constraints</a></li>
+<li><a href="#_global_constraint_patterns">Global Constraint Patterns</a></li>
 </ul>
 </li>
-<li><a href="#_source_code">Source Code</a></li>
-<li><a href="#_tables">Tables</a></li>
-<li><a href="#_admonitions">Admonitions</a></li>
-<li><a href="#_thematic_break">Thematic Break</a></li>
-<li><a href="#_end">End</a></li>
+<li><a href="#_named_routes">Named Routes</a>
+<ul class="sectlevel2">
+<li><a href="#_naming_a_route">Naming a Route</a></li>
+<li><a href="#_generating_urls">Generating URLs</a></li>
+</ul>
+</li>
+<li><a href="#_route_groups">Route Groups</a>
+<ul class="sectlevel2">
+<li><a href="#_prefix">Prefix</a></li>
+<li><a href="#_middleware">Middleware</a></li>
+<li><a href="#_namespace">Namespace</a></li>
+<li><a href="#_nested_groups">Nested Groups</a></li>
+</ul>
+</li>
+<li><a href="#_resource_routes">Resource Routes</a>
+<ul class="sectlevel2">
+<li><a href="#_automatic_resource_controller">Automatic Resource Controller</a></li>
+<li><a href="#_partial_resource_routes">Partial Resource Routes</a></li>
+<li><a href="#_nested_resources">Nested Resources</a></li>
+</ul>
+</li>
+<li><a href="#_middleware">Middleware</a>
+<ul class="sectlevel2">
+<li><a href="#_attaching_middleware">Attaching Middleware</a></li>
+<li><a href="#_middleware_parameters">Middleware Parameters</a></li>
+<li><a href="#_global_middleware">Global Middleware</a></li>
+</ul>
+</li>
+<li><a href="#_route_caching">Route Caching</a></li>
+<li><a href="#_debugging">Debugging</a>
+<ul class="sectlevel2">
+<li><a href="#_list_routes">List Routes</a></li>
+</ul>
+</li>
 </ul>
 </div>
-<div id="header">
-<h1>AsciiDoc PHP Integration Guide</h1>
-<div class="details"><span class="author">Author Name</span></div>
-<div class="details"><span class="revdate">2024-01-01</span></div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is the preamble paragraph.</p>
+<p>Generated document <strong>3</strong>. The corpus runner will time how long the full parse-and-convert cycle takes for this variation of <code>routing</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$result = Benchmark::run(&#039;routing&#039;, variant: 3);</code></pre>
 </div>
 </div>
-</div>
-<div class="sect1" id="_introduction">
-<h2>Introduction</h2>
-<div class="sectionbody">
 <div class="paragraph">
-<p>This section introduces the document.</p>
+<p>The Webware router maps incoming HTTP requests to controller actions or
+closures. It supports named routes, route groups, parameter constraints,
+middleware stacks, and sub-domain routing.</p>
 </div>
-<div class="sect2" id="_sub_section">
-<h3>Sub-section</h3>
+</div>
+</div>
+<div class="sect1" id="_basic_routes">
+<h2>Basic Routes</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>A nested section with <strong>bold</strong>, <em>italic</em>, and <code>monospaced</code> inline formatting.</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_lists">
-<h2>Lists</h2>
-<div class="sectionbody">
-<div class="sect2" id="_unordered_list">
-<h3>Unordered List</h3>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>Item one</p>
-</li>
-<li>
-<p>Item two</p>
-</li>
-<li>
-<p>Item three</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect2" id="_ordered_list">
-<h3>Ordered List</h3>
-<div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>First item</p>
-</li>
-<li>
-<p>Second item</p>
-</li>
-<li>
-<p>Third item</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_source_code">
-<h2>Source Code</h2>
+<div class="sect2" id="_http_verbs">
+<h3>HTTP Verbs</h3>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
-echo &quot;Hello, World!\n&quot;;</code></pre>
+
+use Webware\Router\Router;
+
+$router = new Router();
+
+$router-&gt;get(    &#039;/users&#039;,       [UserController::class, &#039;index&#039;]);
+$router-&gt;post(   &#039;/users&#039;,       [UserController::class, &#039;store&#039;]);
+$router-&gt;get(    &#039;/users/{id}&#039;,  [UserController::class, &#039;show&#039;]);
+$router-&gt;put(    &#039;/users/{id}&#039;,  [UserController::class, &#039;update&#039;]);
+$router-&gt;patch(  &#039;/users/{id}&#039;,  [UserController::class, &#039;patch&#039;]);
+$router-&gt;delete( &#039;/users/{id}&#039;,  [UserController::class, &#039;destroy&#039;]);
+$router-&gt;options(&#039;/users&#039;,       [UserController::class, &#039;options&#039;]);</code></pre>
 </div>
 </div>
 </div>
 </div>
-<div class="sect1" id="_tables">
-<h2>Tables</h2>
+<div class="sect2" id="_multiple_verbs_on_one_route">
+<h3>Multiple Verbs on One Route</h3>
 <div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;match([&#039;GET&#039;, &#039;POST&#039;], &#039;/login&#039;, [AuthController::class, &#039;login&#039;]);
+$router-&gt;any(&#039;/webhook&#039;,        [WebhookController::class, &#039;handle&#039;]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_route_parameters">
+<h2>Route Parameters</h2>
+<div class="sectionbody">
+<div class="sect2" id="_required_parameters">
+<h3>Required Parameters</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Parameters are denoted by curly braces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/posts/{slug}&#039;,       [PostController::class, &#039;show&#039;]);
+$router-&gt;get(&#039;/users/{id}/posts&#039;,   [PostController::class, &#039;byUser&#039;]);
+$router-&gt;get(&#039;/categories/{cat}/products/{sku}&#039;, [ProductController::class, &#039;show&#039;]);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The parameter is injected by name into the controller method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">public function show(Request $request, Response $response, string $slug): Response
+{
+    $post = Post::findBySlug($slug);
+    return $response-&gt;json($post);
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_optional_parameters">
+<h3>Optional Parameters</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Append <code>?</code> to make a parameter optional:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/archive/{year?}/{month?}&#039;, [ArchiveController::class, &#039;index&#039;]);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Optional parameters default to <code>null</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">public function index(Request $request, Response $response, ?int $year = null, ?int $month = null): Response
+{
+    return $response-&gt;json(Archive::filter($year, $month));
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_parameter_constraints">
+<h3>Parameter Constraints</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Constrain parameter values with regular expressions:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/users/{id}&#039;,   [UserController::class, &#039;show&#039;])-&gt;where(&#039;id&#039;, &#039;\d+&#039;);
+$router-&gt;get(&#039;/posts/{slug}&#039;, [PostController::class, &#039;show&#039;])-&gt;where(&#039;slug&#039;, &#039;[a-z0-9-]+&#039;);
+$router-&gt;get(&#039;/files/{path}&#039;, [FileController::class, &#039;get&#039;]) -&gt;where(&#039;path&#039;, &#039;.+&#039;);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Multiple constraints:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/archive/{year}/{month}&#039;, [ArchiveController::class, &#039;index&#039;])
+       -&gt;where([&#039;year&#039; =&gt; &#039;\d{4}&#039;, &#039;month&#039; =&gt; &#039;(0[1-9]|1[0-2])&#039;]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_global_constraint_patterns">
+<h3>Global Constraint Patterns</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Register reusable patterns in <code>config/routes.php</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;pattern(&#039;id&#039;,   &#039;\d+&#039;);
+$router-&gt;pattern(&#039;slug&#039;, &#039;[a-z0-9-]+&#039;);
+$router-&gt;pattern(&#039;uuid&#039;, &#039;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}&#039;);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_named_routes">
+<h2>Named Routes</h2>
+<div class="sectionbody">
+<div class="sect2" id="_naming_a_route">
+<h3>Naming a Route</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/dashboard&#039;, [DashboardController::class, &#039;index&#039;])-&gt;name(&#039;dashboard&#039;);
+$router-&gt;get(&#039;/users/{id}&#039;, [UserController::class, &#039;show&#039;])-&gt;name(&#039;users.show&#039;);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_generating_urls">
+<h3>Generating URLs</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$url = route(&#039;dashboard&#039;);                     // /dashboard
+
+$url = route(&#039;users.show&#039;, [&#039;id&#039; =&gt; 42]);      // /users/42
+
+$url = route(&#039;dashboard&#039;, [], absolute: true); // https://example.com/dashboard</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In templates:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-html hljs" data-lang="html">&lt;a href=&quot;{{ route(&#039;users.show&#039;, [&#039;id&#039; =&gt; $user-&gt;id]) }}&quot;&gt;View Profile&lt;/a&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_route_groups">
+<h2>Route Groups</h2>
+<div class="sectionbody">
+<div class="sect2" id="_prefix">
+<h3>Prefix</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;group(&#039;/api/v1&#039;, static function (Router $r) {
+    $r-&gt;get(&#039;/users&#039;,          [UserController::class, &#039;index&#039;]);
+    $r-&gt;post(&#039;/users&#039;,         [UserController::class, &#039;store&#039;]);
+    $r-&gt;get(&#039;/users/{id}&#039;,     [UserController::class, &#039;show&#039;]);
+    $r-&gt;put(&#039;/users/{id}&#039;,     [UserController::class, &#039;update&#039;]);
+    $r-&gt;delete(&#039;/users/{id}&#039;,  [UserController::class, &#039;destroy&#039;]);
+    $r-&gt;get(&#039;/posts&#039;,          [PostController::class, &#039;index&#039;]);
+    $r-&gt;post(&#039;/posts&#039;,         [PostController::class, &#039;store&#039;]);
+    $r-&gt;get(&#039;/posts/{id}&#039;,     [PostController::class, &#039;show&#039;]);
+});</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_middleware">
+<h3>Middleware</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Apply middleware to all routes in a group:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;group(&#039;/admin&#039;, static function (Router $r) {
+    $r-&gt;get(&#039;/dashboard&#039;,       [AdminController::class, &#039;dashboard&#039;]);
+    $r-&gt;get(&#039;/users&#039;,           [AdminController::class, &#039;users&#039;]);
+    $r-&gt;post(&#039;/users/{id}/ban&#039;, [AdminController::class, &#039;banUser&#039;]);
+    $r-&gt;get(&#039;/settings&#039;,        [AdminController::class, &#039;settings&#039;]);
+    $r-&gt;post(&#039;/settings&#039;,       [AdminController::class, &#039;saveSettings&#039;]);
+}, middleware: [AuthMiddleware::class, AdminRoleMiddleware::class, AuditLogMiddleware::class]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_namespace">
+<h3>Namespace</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;group(&#039;/api/v2&#039;, static function (Router $r) {
+    $r-&gt;get(&#039;/users&#039;,    [UserController::class, &#039;index&#039;]);
+    $r-&gt;get(&#039;/products&#039;, [ProductController::class, &#039;index&#039;]);
+}, namespace: &#039;App\\Controller\\V2&#039;);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_nested_groups">
+<h3>Nested Groups</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;group(&#039;/api&#039;, static function (Router $api) {
+    $api-&gt;group(&#039;/v1&#039;, static function (Router $v1) {
+        $v1-&gt;get(&#039;/users&#039;, [V1\UserController::class, &#039;index&#039;]);
+    });
+    $api-&gt;group(&#039;/v2&#039;, static function (Router $v2) {
+        $v2-&gt;get(&#039;/users&#039;, [V2\UserController::class, &#039;index&#039;]);
+    }, middleware: [ThrottleMiddleware::class]);
+}, middleware: [JsonHeaderMiddleware::class]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_resource_routes">
+<h2>Resource Routes</h2>
+<div class="sectionbody">
+<div class="sect2" id="_automatic_resource_controller">
+<h3>Automatic Resource Controller</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Generate all seven RESTful routes with a single call:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;resource(&#039;/posts&#039;, PostController::class);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This registers:</p>
+</div>
 <table class="tableblock frame-all grid-all" style="width:100%">
 <colgroup>
 <col style="width: 16.67%;">
+<col style="width: 16.67%;">
 <col style="width: 33.33%;">
-<col style="width: 50%;">
+<col style="width: 33.33%;">
 </colgroup>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Name</p>
+<p class="tableblock">Method</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Role</p>
+<p class="tableblock">URI</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Department</p>
-</td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Alice</p>
+<p class="tableblock">Action</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Developer</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Engineering</p>
+<p class="tableblock">Route Name</p>
 </td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Bob</p>
+<p class="tableblock">GET</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Designer</p>
+<p class="tableblock">`/posts`</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Creative</p>
+<p class="tableblock">index</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`posts.index`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">GET</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`/posts/create`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">create</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`posts.create`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">POST</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`/posts`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">store</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`posts.store`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">GET</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`/posts/{id}`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">show</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`posts.show`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">GET</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`/posts/{id}/edit`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">edit</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`posts.edit`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">PUT</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`/posts/{id}`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">update</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`posts.update`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">DELETE</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`/posts/{id}`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">destroy</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`posts.destroy`</p>
 </td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<div class="sect1" id="_admonitions">
-<h2>Admonitions</h2>
+<div class="sect2" id="_partial_resource_routes">
+<h3>Partial Resource Routes</h3>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This is a note admonition.</td>
-</tr>
-</table>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;resource(&#039;/photos&#039;, PhotoController::class, only: [&#039;index&#039;, &#039;show&#039;]);
+
+$router-&gt;resource(&#039;/comments&#039;, CommentController::class, except: [&#039;create&#039;, &#039;edit&#039;]);
+
+$router-&gt;apiResource(&#039;/products&#039;, ProductController::class);</code></pre>
 </div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-This is a tip admonition.</td>
-</tr>
-</table>
+</div>
+</div>
+</div>
+<div class="sect2" id="_nested_resources">
+<h3>Nested Resources</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;resource(&#039;/posts/{post}/comments&#039;, CommentController::class);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_middleware">
+<h2>Middleware</h2>
+<div class="sectionbody">
+<div class="sect2" id="_attaching_middleware">
+<h3>Attaching Middleware</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/secure&#039;, [SecureController::class, &#039;index&#039;])
+       -&gt;middleware(AuthMiddleware::class);
+
+$router-&gt;post(&#039;/transfer&#039;, [TransferController::class, &#039;execute&#039;])
+       -&gt;middleware([AuthMiddleware::class, TwoFactorMiddleware::class, RateLimitMiddleware::class]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_middleware_parameters">
+<h3>Middleware Parameters</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/admin&#039;, [AdminController::class, &#039;index&#039;])
+       -&gt;middleware(RoleMiddleware::class . &#039;:admin,super-admin&#039;);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the middleware class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">final class RoleMiddleware implements MiddlewareInterface
+{
+    public function process(Request $request, Handler $handler, string ...$roles): Response
+    {
+        if (! $request-&gt;user()?-&gt;hasAnyRole($roles)) {
+            return new Response(403, [&#039;error&#039; =&gt; &#039;Insufficient role&#039;]);
+        }
+        return $handler-&gt;handle($request);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_global_middleware">
+<h3>Global Middleware</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Register middleware that runs on every request in <code>config/middleware.php</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">return [
+    &#039;global&#039; =&gt; [
+        TrimStringsMiddleware::class,
+        ConvertEmptyStringsMiddleware::class,
+        JsonBodyParserMiddleware::class,
+        SecurityHeadersMiddleware::class,
+        CorsMiddleware::class,
+    ],
+    &#039;named&#039; =&gt; [
+        &#039;auth&#039;       =&gt; AuthMiddleware::class,
+        &#039;guest&#039;      =&gt; GuestMiddleware::class,
+        &#039;throttle&#039;   =&gt; ThrottleMiddleware::class,
+        &#039;signed&#039;     =&gt; SignedRouteMiddleware::class,
+    ],
+];</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_route_caching">
+<h2>Route Caching</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cache compiled routes for faster production startup:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware route:cache
+php bin/webware route:clear
+php bin/webware route:list        # list all registered routes</code></pre>
+</div>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -615,21 +1015,64 @@ This is a tip admonition.</td>
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-This is a warning admonition.</td>
+Route caching uses serialised closures. If your routes use closures
+rather than <code>[Controller::class, &#039;method&#039;]</code> notation, use
+<code>webware/opis-closure</code> to make them serialisable, or switch to controller notation.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/ping&#039;, fn($req, $res) =&gt; $res-&gt;text(&#039;pong&#039;));
+
+$router-&gt;get(&#039;/ping&#039;, [PingController::class, &#039;index&#039;]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_debugging">
+<h2>Debugging</h2>
+<div class="sectionbody">
+<div class="sect2" id="_list_routes">
+<h3>List Routes</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware route:list
+php bin/webware route:list --filter=api
+php bin/webware route:list --method=POST</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>+---------+---------------------------+-----------------------------------+
+| Method  | URI                       | Action                            |
++---------+---------------------------+-----------------------------------+
+| GET     | /                         | HomeController@index              |
+| GET     | /api/v1/users             | UserController@index              |
+| POST    | /api/v1/users             | UserController@store              |
+| GET     | /api/v1/users/{id}        | UserController@show               |
+| PUT     | /api/v1/users/{id}        | UserController@update             |
+| DELETE  | /api/v1/users/{id}        | UserController@destroy            |
++---------+---------------------------+-----------------------------------+</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Use <code>route:list --json</code> to pipe output into other tools.</td>
 </tr>
 </table>
 </div>
 </div>
 </div>
-<div class="sect1" id="_thematic_break">
-<h2>Thematic Break</h2>
-<div class="sectionbody">
-<hr>
-</div>
-</div>
-<div class="sect1" id="_end">
-<h2>End</h2>
-<div class="sectionbody">
 </div>
 </div>
 </div>

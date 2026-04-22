@@ -58,6 +58,9 @@ final class Parser
         // Parse the body into the document root, building the section tree.
         self::parseDocumentBody($reader, $document);
 
+        // Assign section numbers when :sectnums: is set.
+        self::numberSections($document);
+
         return $document;
     }
 
@@ -321,7 +324,16 @@ final class Parser
         // Re-encode the section title line so the parent frame can re-parse it.
         $eqs   = str_repeat('=', $section->getLevel() + 1);
         $title = $section->getTitle() ?? '';
+        // Push title first — it will be read second (stack is LIFO).
         $reader->unshiftLine($eqs . ' ' . $title);
+
+        // If the section had an explicitly assigned ID (not auto-generated from
+        // the title), push back the attribute list line so it is read before
+        // the title on the next parse pass.
+        $customId = $section->getId();
+        if ($customId !== null && $customId !== self::generateSectionId($title)) {
+            $reader->unshiftLine("[#{$customId}]");
+        }
     }
 
     // ── Block dispatch ────────────────────────────────────────────────────────
@@ -634,7 +646,10 @@ final class Parser
     private static function generateSectionId(string $title): string
     {
         $id = strtolower($title);
-        $id = (string) preg_replace('/[^a-z0-9]+/', '_', $id);
+        // Strip characters that are neither alphanumeric, space, nor hyphen.
+        $id = (string) preg_replace('/[^a-z0-9 _-]/', '', $id);
+        // Collapse whitespace / hyphens to underscores.
+        $id = (string) preg_replace('/[\s_-]+/', '_', $id);
         $id = trim($id, '_');
         return '_' . $id;
     }
@@ -948,7 +963,9 @@ final class Parser
             $row = new Row();
             foreach ($chunk as $cellIdx => $cellText) {
                 $col  = $columns[$cellIdx % $colCount];
-                $cell = new Cell($col, trim((string) $cellText));
+                // Unescape the separator char that was preceded by a backslash (e.g. \| → |).
+                $rawText = str_replace('\\' . $separator, $separator, trim((string) $cellText));
+                $cell = new Cell($col, $rawText);
                 $row->appendCell($cell);
             }
             if ($hasHeader && $chunkIdx === 0) {
@@ -964,9 +981,15 @@ final class Parser
      */
     private static function tableHasHeader(array $attrs): bool
     {
+        // Shorthand %header → stored as 'header-option' => ''
         if (isset($attrs['header-option'])) {
             return true;
         }
+        // Named options="header" or options="header,footer"
+        if (isset($attrs['options']) && is_string($attrs['options']) && str_contains($attrs['options'], 'header')) {
+            return true;
+        }
+        // Legacy positional index 0 containing 'header' (e.g. [cols="...",header])
         if (isset($attrs[0]) && is_string($attrs[0]) && str_contains($attrs[0], 'header')) {
             return true;
         }
@@ -1129,6 +1152,49 @@ final class Parser
         self::applyAttrsToBlock($attrs, $block);
 
         return $block;
+    }
+
+    // ── Section numbering ────────────────────────────────────────────────────
+
+    /**
+     * Walk the document's section tree and assign sequential section numbers
+     * when the :sectnums: document attribute is set.
+     */
+    private static function numberSections(Document $document): void
+    {
+        if (!$document->hasAttribute('sectnums')) {
+            return;
+        }
+
+        // :sectnumlevels: defaults to 3 (i.e. level-1 through level-3 are numbered).
+        $rawLevels = $document->getAttribute('sectnumlevels', null);
+        $maxLevel  = is_numeric($rawLevels) ? (int) $rawLevels : 3;
+
+        self::assignSectionNumbers($document->getSections(), '', $maxLevel);
+    }
+
+    /**
+     * Recursively assign composite section numbers (e.g. "1", "1.2", "1.2.3").
+     *
+     * @param list<Section> $sections
+     */
+    private static function assignSectionNumbers(array $sections, string $prefix, int $maxLevel): void
+    {
+        $count = 0;
+        foreach ($sections as $section) {
+            if ($section->getLevel() > $maxLevel) {
+                continue;
+            }
+            $count++;
+            $num = $prefix !== '' ? $prefix . '.' . $count : (string) $count;
+            $section->setNumber($num);
+            $section->setNumbered(true);
+
+            $children = $section->getSections();
+            if ($children !== [] && $section->getLevel() < $maxLevel) {
+                self::assignSectionNumbers($children, $num, $maxLevel);
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

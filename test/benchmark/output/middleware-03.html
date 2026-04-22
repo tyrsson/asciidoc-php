@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="asciidoc-php 0.1.0">
-<title>AsciiDoc PHP Integration Guide</title>
+<title>Webware Framework: Middleware Guide [Variant 3]</title>
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
 /* Uncomment the following line when using as a custom stylesheet */
@@ -433,169 +433,622 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
 </head>
-<body class="article toc2 toc-left">
-<div id="toc" class="toc2">
+<body class="article">
+<div id="header">
+<h1>Webware Framework: Middleware Guide [Variant 3]</h1>
+<div class="details"><span class="author">Webware Team</span></div>
+<div class="details"><span class="revdate">2026-01-01</span></div>
+<div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_introduction">Introduction</a>
+<li><a href="#_how_the_pipeline_works">How the Pipeline Works</a></li>
+<li><a href="#_writing_middleware">Writing Middleware</a>
 <ul class="sectlevel2">
-<li><a href="#_sub_section">Sub-section</a></li>
+<li><a href="#_the_middlewareinterface">The MiddlewareInterface</a></li>
+<li><a href="#_short_circuiting">Short-Circuiting</a></li>
+<li><a href="#_accessing_the_container">Accessing the Container</a></li>
 </ul>
 </li>
-<li><a href="#_lists">Lists</a>
+<li><a href="#_built_in_middleware">Built-In Middleware</a></li>
+<li><a href="#_registering_middleware">Registering Middleware</a>
 <ul class="sectlevel2">
-<li><a href="#_unordered_list">Unordered List</a></li>
-<li><a href="#_ordered_list">Ordered List</a></li>
+<li><a href="#_global_middleware">Global Middleware</a></li>
+<li><a href="#_named_middleware">Named Middleware</a></li>
+<li><a href="#_middleware_groups">Middleware Groups</a></li>
 </ul>
 </li>
-<li><a href="#_source_code">Source Code</a></li>
-<li><a href="#_tables">Tables</a></li>
-<li><a href="#_admonitions">Admonitions</a></li>
-<li><a href="#_thematic_break">Thematic Break</a></li>
-<li><a href="#_end">End</a></li>
+<li><a href="#_middleware_parameters">Middleware Parameters</a></li>
+<li><a href="#_middleware_ordering">Middleware Ordering</a></li>
+<li><a href="#_testing_middleware">Testing Middleware</a></li>
 </ul>
 </div>
-<div id="header">
-<h1>AsciiDoc PHP Integration Guide</h1>
-<div class="details"><span class="author">Author Name</span></div>
-<div class="details"><span class="revdate">2024-01-01</span></div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is the preamble paragraph.</p>
+<p>Generated document <strong>3</strong>. The corpus runner will time how long the full parse-and-convert cycle takes for this variation of <code>middleware</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$result = Benchmark::run(&#039;middleware&#039;, variant: 3);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Middleware intercepts HTTP requests and responses, forming a composable
+pipeline between the router and the final handler. Each middleware wraps
+the next, forming an onion-ring structure.</p>
 </div>
 </div>
 </div>
-<div class="sect1" id="_introduction">
-<h2>Introduction</h2>
+<div class="sect1" id="_how_the_pipeline_works">
+<h2>How the Pipeline Works</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section introduces the document.</p>
+<p>A request flows inward through the middleware stack and the response
+flows outward in reverse order:</p>
 </div>
-<div class="sect2" id="_sub_section">
-<h3>Sub-section</h3>
-<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>Request  →  Middleware A  →  Middleware B  →  Middleware C  →  Handler
+Response ←  Middleware A  ←  Middleware B  ←  Middleware C  ←  Handler</code></pre>
+</div>
+</div>
 <div class="paragraph">
-<p>A nested section with <strong>bold</strong>, <em>italic</em>, and <code>monospaced</code> inline formatting.</p>
+<p>Each middleware can:</p>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_lists">
-<h2>Lists</h2>
-<div class="sectionbody">
-<div class="sect2" id="_unordered_list">
-<h3>Unordered List</h3>
-<div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p>Item one</p>
+<p>Inspect or modify the request before passing it on</p>
 </li>
 <li>
-<p>Item two</p>
+<p>Short-circuit the pipeline and return a response early</p>
 </li>
 <li>
-<p>Item three</p>
+<p>Inspect or modify the response on the way back out</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
-<div class="sect2" id="_ordered_list">
-<h3>Ordered List</h3>
+<div class="sect1" id="_writing_middleware">
+<h2>Writing Middleware</h2>
 <div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>First item</p>
-</li>
-<li>
-<p>Second item</p>
-</li>
-<li>
-<p>Third item</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_source_code">
-<h2>Source Code</h2>
+<div class="sect2" id="_the_middlewareinterface">
+<h3>The MiddlewareInterface</h3>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
-echo &quot;Hello, World!\n&quot;;</code></pre>
+
+declare(strict_types=1);
+
+namespace App\Middleware;
+
+use Webware\Http\Request;
+use Webware\Http\Response;
+use Webware\Middleware\Handler;
+use Webware\Middleware\MiddlewareInterface;
+
+final class ExampleMiddleware implements MiddlewareInterface
+{
+    public function process(Request $request, Handler $handler): Response
+    {
+        // Before: inspect/modify the request
+        $request = $request-&gt;withHeader(&#039;X-Request-Id&#039;, uniqid(&#039;req_&#039;, true));
+
+        // Pass to the next middleware/handler
+        $response = $handler-&gt;handle($request);
+
+        // After: inspect/modify the response
+        return $response-&gt;withHeader(&#039;X-Processed-By&#039;, &#039;Webware&#039;);
+    }
+}</code></pre>
 </div>
 </div>
 </div>
 </div>
-<div class="sect1" id="_tables">
-<h2>Tables</h2>
+<div class="sect2" id="_short_circuiting">
+<h3>Short-Circuiting</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Return a response without calling <code>$handler-&gt;handle()</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">final class MaintenanceModeMiddleware implements MiddlewareInterface
+{
+    public function __construct(private readonly Config $config) {}
+
+    public function process(Request $request, Handler $handler): Response
+    {
+        if ($this-&gt;config-&gt;get(&#039;app.maintenance&#039;, false)) {
+            return new Response(503, [&#039;Retry-After&#039; =&gt; &#039;300&#039;], json_encode([
+                &#039;error&#039;   =&gt; &#039;Service Unavailable&#039;,
+                &#039;message&#039; =&gt; &#039;The application is undergoing maintenance. Please try again shortly.&#039;,
+            ]));
+        }
+
+        return $handler-&gt;handle($request);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_accessing_the_container">
+<h3>Accessing the Container</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Middleware is resolved through the service container, so constructor
+injection works automatically:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">final class RateLimitMiddleware implements MiddlewareInterface
+{
+    public function __construct(
+        private readonly Cache      $cache,
+        private readonly Config     $config,
+        private readonly Logger     $logger,
+    ) {}
+
+    public function process(Request $request, Handler $handler): Response
+    {
+        $key   = &#039;rate:&#039; . $request-&gt;ip();
+        $limit = $this-&gt;config-&gt;get(&#039;throttle.requests_per_minute&#039;, 60);
+        $hits  = (int) $this-&gt;cache-&gt;get($key, 0);
+
+        if ($hits &gt;= $limit) {
+            $this-&gt;logger-&gt;warning(&#039;Rate limit exceeded&#039;, [&#039;ip&#039; =&gt; $request-&gt;ip()]);
+            return new Response(429, [&#039;Retry-After&#039; =&gt; &#039;60&#039;], json_encode([
+                &#039;error&#039; =&gt; &#039;Too Many Requests&#039;,
+            ]));
+        }
+
+        $this-&gt;cache-&gt;put($key, $hits + 1, ttl: 60);
+
+        return $handler-&gt;handle($request)
+                       -&gt;withHeader(&#039;X-RateLimit-Limit&#039;,     (string) $limit)
+                       -&gt;withHeader(&#039;X-RateLimit-Remaining&#039;, (string) max(0, $limit - $hits - 1));
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_built_in_middleware">
+<h2>Built-In Middleware</h2>
 <div class="sectionbody">
 <table class="tableblock frame-all grid-all" style="width:100%">
 <colgroup>
-<col style="width: 16.67%;">
 <col style="width: 33.33%;">
-<col style="width: 50%;">
+<col style="width: 44.44%;">
+<col style="width: 22.22%;">
 </colgroup>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Name</p>
+<p class="tableblock">Class</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Role</p>
+<p class="tableblock">Description</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Department</p>
-</td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Alice</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Developer</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Engineering</p>
+<p class="tableblock">Package</p>
 </td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Bob</p>
+<p class="tableblock">`JsonBodyParserMiddleware`</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Designer</p>
+<p class="tableblock">Parses `application/json` request bodies</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Creative</p>
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`FormBodyParserMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Parses `application/x-www-form-urlencoded` bodies</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`TrimStringsMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Trims whitespace from string inputs</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`SecurityHeadersMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Adds CSP, HSTS, X-Frame-Options headers</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`CorsMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Handles CORS preflight and header injection</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`AuthMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Validates JWT or session credentials</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`webware/auth-*`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`ThrottleMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Per-IP / per-user rate limiting</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`CacheMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Response caching via Cache driver</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`GzipMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Gzip-compresses responses</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`ETagMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Generates and validates ETags</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`AuditLogMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Logs every request/response to the audit log</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`webware/audit-log`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`SignedRouteMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Validates HMAC-signed URL signatures</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`IdempotencyMiddleware`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Enforces idempotency keys on mutating requests</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Core</p>
 </td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<div class="sect1" id="_admonitions">
-<h2>Admonitions</h2>
+<div class="sect1" id="_registering_middleware">
+<h2>Registering Middleware</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
+<div class="sect2" id="_global_middleware">
+<h3>Global Middleware</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Runs on every request. Register in <code>config/middleware.php</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
+
+return [
+    &#039;global&#039; =&gt; [
+        TrimStringsMiddleware::class,
+        ConvertEmptyStringsMiddleware::class,
+        JsonBodyParserMiddleware::class,
+        SecurityHeadersMiddleware::class,
+        CorsMiddleware::class,
+        RequestIdMiddleware::class,
+    ],
+];</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_named_middleware">
+<h3>Named Middleware</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Alias a class for easy reference in route definitions:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&#039;named&#039; =&gt; [
+    &#039;auth&#039;       =&gt; AuthMiddleware::class,
+    &#039;guest&#039;      =&gt; GuestMiddleware::class,
+    &#039;throttle&#039;   =&gt; ThrottleMiddleware::class,
+    &#039;role&#039;       =&gt; RoleMiddleware::class,
+    &#039;signed&#039;     =&gt; SignedRouteMiddleware::class,
+    &#039;idempotent&#039; =&gt; IdempotencyMiddleware::class,
+    &#039;cache&#039;      =&gt; CacheMiddleware::class,
+    &#039;etag&#039;       =&gt; ETagMiddleware::class,
+],</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Reference by alias on routes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;post(&#039;/orders&#039;, [OrderController::class, &#039;store&#039;])
+       -&gt;middleware([&#039;auth&#039;, &#039;throttle:100,1&#039;, &#039;idempotent&#039;]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_middleware_groups">
+<h3>Middleware Groups</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Bundle multiple middleware under a group name:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&#039;groups&#039; =&gt; [
+    &#039;web&#039; =&gt; [
+        SessionMiddleware::class,
+        CsrfMiddleware::class,
+        AuthenticateSessionMiddleware::class,
+        ShareErrorsFromSessionMiddleware::class,
+    ],
+    &#039;api&#039; =&gt; [
+        JsonBodyParserMiddleware::class,
+        ThrottleMiddleware::class . &#039;:60,1&#039;,
+        AuthMiddleware::class,
+    ],
+    &#039;admin&#039; =&gt; [
+        AuthMiddleware::class,
+        RoleMiddleware::class . &#039;:admin&#039;,
+        AuditLogMiddleware::class,
+        TwoFactorMiddleware::class,
+    ],
+],</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply a group to a route group:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;group(&#039;/api/v1&#039;, static function (Router $r) {
+    // ...
+}, middleware: [&#039;api&#039;]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_middleware_parameters">
+<h2>Middleware Parameters</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Pass configuration to middleware via the route definition:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;post(&#039;/checkout&#039;, [CheckoutController::class, &#039;process&#039;])
+       -&gt;middleware(ThrottleMiddleware::class . &#039;:10,1&#039;);
+
+$router-&gt;delete(&#039;/users/{id}&#039;, [UserController::class, &#039;destroy&#039;])
+       -&gt;middleware(RoleMiddleware::class . &#039;:admin,super-admin&#039;);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_middleware_ordering">
+<h2>Middleware Ordering</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Middleware is applied in the order it is declared. The outermost middleware
+runs first on the request and last on the response.</p>
+</div>
+<table class="tableblock frame-all grid-all" style="width:100%">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Order</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Recommended Placement</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">First</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`RequestIdMiddleware` — assign ID before any logging</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Early</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`SecurityHeadersMiddleware` — headers on all responses</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Early</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`CorsMiddleware` — must handle OPTIONS preflight early</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Mid</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`ThrottleMiddleware` — rate-limit before auth overhead</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Mid</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`AuthMiddleware` — authenticate before business logic</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Late</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`CacheMiddleware` — only cache authenticated responses if needed</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Last</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`AuditLogMiddleware` — log the final outcome</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock warning">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-This is a note admonition.</td>
+Placing <code>CorsMiddleware</code> after <code>AuthMiddleware</code> will cause CORS
+preflight (<code>OPTIONS</code>) requests to fail authentication checks and return 401
+instead of the expected 200 response.</td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+<div class="sect1" id="_testing_middleware">
+<h2>Testing Middleware</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
+
+declare(strict_types=1);
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
+use Webware\Http\Request;
+use Webware\Http\Response;
+use Webware\Middleware\Handler;
+use App\Middleware\RateLimitMiddleware;
+
+#[CoversClass(RateLimitMiddleware::class)]
+final class RateLimitMiddlewareTest extends TestCase
+{
+    public function testAllowsRequestsUnderLimit(): void
+    {
+        $cache      = new ArrayCache();
+        $config     = new ArrayConfig([&#039;throttle.requests_per_minute&#039; =&gt; 60]);
+        $middleware = new RateLimitMiddleware($cache, $config, new NullLogger());
+
+        $request  = Request::create(&#039;GET&#039;, &#039;/api/test&#039;);
+        $handler  = Handler::fromCallable(fn($r) =&gt; new Response(200));
+
+        $response = $middleware-&gt;process($request, $handler);
+
+        self::assertSame(200, $response-&gt;statusCode());
+        self::assertSame(&#039;60&#039;, $response-&gt;header(&#039;X-RateLimit-Limit&#039;));
+        self::assertSame(&#039;59&#039;, $response-&gt;header(&#039;X-RateLimit-Remaining&#039;));
+    }
+
+    public function testBlocksRequestsOverLimit(): void
+    {
+        $cache = new ArrayCache([&#039;rate:127.0.0.1&#039; =&gt; 60]);
+        $middleware = new RateLimitMiddleware($cache, new ArrayConfig([&#039;throttle.requests_per_minute&#039; =&gt; 60]), new NullLogger());
+
+        $request  = Request::create(&#039;GET&#039;, &#039;/api/test&#039;, serverParams: [&#039;REMOTE_ADDR&#039; =&gt; &#039;127.0.0.1&#039;]);
+        $handler  = Handler::fromCallable(fn($r) =&gt; new Response(200));
+
+        $response = $middleware-&gt;process($request, $handler);
+
+        self::assertSame(429, $response-&gt;statusCode());
+    }
+}</code></pre>
+</div>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -604,32 +1057,11 @@ This is a note admonition.</td>
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-This is a tip admonition.</td>
+Use <code>Handler::fromCallable()</code> to create a lightweight handler stub
+in tests without wiring up the full router.</td>
 </tr>
 </table>
 </div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This is a warning admonition.</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1" id="_thematic_break">
-<h2>Thematic Break</h2>
-<div class="sectionbody">
-<hr>
-</div>
-</div>
-<div class="sect1" id="_end">
-<h2>End</h2>
-<div class="sectionbody">
 </div>
 </div>
 </div>

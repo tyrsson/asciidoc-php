@@ -23,6 +23,16 @@ use Webware\AsciidocPhp\Node\Table;
  */
 final class Html5Converter extends AbstractConverter
 {
+    /** Substitution pipeline applied to section titles and TOC entries. */
+    private const array TITLE_SUBS = [
+        'specialcharacters',
+        'quotes',
+        'replacements',
+        'macros',
+        'attributes',
+        'post_replacements',
+    ];
+
     /** @var array<string, array{string, string}> */
     private const QUOTE_TAGS = [
         'strong'      => ['<strong>',   '</strong>'],
@@ -238,16 +248,71 @@ HTML;
 
     private function renderDocumentBody(Document $doc): string
     {
-        $doctype = $doc->getDoctype();
-        $header  = $this->renderDocumentHeader($doc);
+        $doctype  = $doc->getDoctype();
+        $tocPlace = $this->resolveTocPlacement($doc);
+
+        $bodyClass = $doctype;
+        $sideToc   = '';
+        if ($tocPlace === 'left') {
+            $bodyClass .= ' toc2 toc-left';
+            $sideToc    = $this->renderSidebarToc($doc);
+        } elseif ($tocPlace === 'right') {
+            $bodyClass .= ' toc2 toc-right';
+            $sideToc    = $this->renderSidebarToc($doc);
+        }
+
+        $header  = $this->renderDocumentHeader($doc, $sideToc);
         $content = $this->renderDocumentContent($doc);
         $footer  = $this->renderDocumentFooter($doc);
         $hlFoot  = $this->renderHighlighterFoot($doc);
 
-        return "<body class=\"{$doctype}\">\n{$header}<div id=\"content\">\n{$content}</div>\n{$footer}{$hlFoot}</body>";
+        return "<body class=\"{$bodyClass}\">\n{$header}<div id=\"content\">\n{$content}</div>\n{$footer}{$hlFoot}</body>";
     }
 
-    private function renderDocumentHeader(Document $doc): string
+    /**
+     * Resolve where the TOC should be placed.
+     *
+     * Returns one of: 'none', 'left', 'right', 'inline'.
+     *   - 'none'   → no :toc: attribute set
+     *   - 'left'   → :toc: left  OR  :toc-placement: left
+     *   - 'right'  → :toc: right OR  :toc-placement: right
+     *   - 'inline' → :toc: (empty/auto/top) — renders inside #header
+     */
+    private function resolveTocPlacement(Document $doc): string
+    {
+        if ($doc->getAttribute('toc', null) === null) {
+            return 'none';
+        }
+
+        $tocValue  = $this->sa($doc, 'toc', '');
+        $placement = $this->sa($doc, 'toc-placement', '');
+
+        if ($tocValue === 'left'  || $placement === 'left') {
+            return 'left';
+        }
+        if ($tocValue === 'right' || $placement === 'right') {
+            return 'right';
+        }
+
+        return 'inline';
+    }
+
+    private function renderSidebarToc(Document $doc): string
+    {
+        $levels   = $this->ia($doc, 'toclevels', 2);
+        $tocTitle = $this->sa($doc, 'toc-title', 'Table of Contents');
+        $sections = $doc->getSections();
+
+        if ($sections === []) {
+            return '';
+        }
+
+        $inner = $this->renderTocLevel($sections, 1, $levels);
+
+        return "<div id=\"toc\" class=\"toc2\">\n<div id=\"toctitle\">{$tocTitle}</div>\n{$inner}</div>\n";
+    }
+
+    private function renderDocumentHeader(Document $doc, string $sideToc = ''): string
     {
         $parts = '';
 
@@ -269,10 +334,13 @@ HTML;
             $parts  .= "<div class=\"details\"><span class=\"revdate\">{$safe}</span></div>\n";
         }
 
-        // TOC in auto / top placement
-        $toc      = $doc->getAttribute('toc', null);
-        $tocPlace = $this->sa($doc, 'toc-placement', 'auto');
-        if ($toc !== null && in_array($tocPlace, ['auto', 'left', 'right', 'top'], true)) {
+        // Sidebar TOC is injected inside #header (matches Asciidoctor structure).
+        if ($sideToc !== '') {
+            $parts .= $sideToc;
+        }
+
+        // Inline TOC (auto/top placement only — left/right are rendered as sidebar in body)
+        if ($this->resolveTocPlacement($doc) === 'inline') {
             $tocLevels = $this->ia($doc, 'toclevels', 2);
             $parts    .= $this->generateToc($doc, $tocLevels);
         }
@@ -326,21 +394,40 @@ HTML;
         $hLevel   = min($level + 1, 6);            // h2 … h6
         $sectNum  = $level;                        // sect1 … sect5
         $id       = $section->getId();
-        $title    = htmlspecialchars((string) $section->getTitle(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
 
-        $idAttr  = $id !== null ? " id=\"{$id}\"" : '';
+        // Apply title substitutions: HTML-escape + inline markup (backtick → <code>, etc.).
+        $rawTitle = (string) $section->getTitle();
+        $title    = $section->applySubstitutions($rawTitle, self::TITLE_SUBS);
+
+        // Prepend section number when :sectnums: is active.
+        if ($section->isNumbered()) {
+            $title = $section->getSectnum() . '. ' . $title;
+        }
+
+        $idAttr = $id !== null ? " id=\"{$id}\"" : '';
 
         $childHtml = '';
         foreach ($section->getBlocks() as $block) {
             $childHtml .= $block->convert();
         }
 
-        return <<<HTML
-<div class="sect{$sectNum}"{$idAttr}>
-<h{$hLevel}>{$title}</h{$hLevel}>
+        // Only level-1 sections (sect1) get a <div class="sectionbody"> wrapper.
+        // Deeper sections embed child content directly.
+        if ($level === 1) {
+            return <<<HTML
+<div class="sect{$sectNum}">
+<h{$hLevel}{$idAttr}>{$title}</h{$hLevel}>
 <div class="sectionbody">
 {$childHtml}</div>
 </div>
+
+HTML;
+        }
+
+        return <<<HTML
+<div class="sect{$sectNum}">
+<h{$hLevel}{$idAttr}>{$title}</h{$hLevel}>
+{$childHtml}</div>
 
 HTML;
     }
@@ -380,10 +467,15 @@ HTML;
 
         $content = $block->content();
 
+        // When a syntax highlighter is active, add 'highlightjs' to the <pre> class.
+        $preClass = $this->resolveHighlighter($block->getDocument()) === 'highlightjs'
+            ? 'highlightjs highlight'
+            : 'highlight';
+
         return <<<HTML
 <div class="{$class}{$idRole}">
 {$title}<div class="content">
-<pre class="highlight"><code{$codeClass}>{$content}</code></pre>
+<pre class="{$preClass}"><code{$codeClass}>{$content}</code></pre>
 </div>
 </div>
 
@@ -657,14 +749,18 @@ HTML;
     {
         $frame   = $this->sa($table, 'frame', 'all');
         $grid    = $this->sa($table, 'grid', 'all');
-        $width   = $this->sa($table, 'width', '100');
+        $width   = (int) $this->sa($table, 'width', '100');
         $stripes = $this->sa($table, 'stripes', '');
 
         $idRole  = $this->renderIdAndRole($table);
         $caption = $this->renderCaption($table, $this->sa($table->getDocument(), 'table-caption', 'Table'));
 
         $stripeClass = $stripes !== '' ? " stripes-{$stripes}" : '';
-        $tableClass  = "tableblock frame-{$frame} grid-{$grid}{$stripeClass}{$idRole}";
+        // Asciidoctor uses the 'stretch' class for 100%-wide tables instead of an
+        // inline style attribute.
+        $widthClass  = $width === 100 ? ' stretch' : '';
+        $widthStyle  = $width !== 100 ? " style=\"width:{$width}%\"" : '';
+        $tableClass  = "tableblock frame-{$frame} grid-{$grid}{$stripeClass}{$widthClass}{$idRole}";
 
         // Colgroup
         $columns   = $table->getColumns();
@@ -676,7 +772,7 @@ HTML;
                 $totalWidth = $colCount;
             }
             foreach ($columns as $col) {
-                $pct      = $totalWidth > 0 ? round(($col->width / $totalWidth) * 100, 2) : 0.0;
+                $pct      = $totalWidth > 0 ? floor(($col->width / $totalWidth) * 1000000) / 10000 : 0.0;
                 $colgroup .= "<col style=\"width: {$pct}%;\">\n";
             }
         }
@@ -692,8 +788,8 @@ HTML;
                     $valign     = $cell->column->valign;
                     $colspanAttr = $cell->colspan > 1 ? " colspan=\"{$cell->colspan}\"" : '';
                     $rowspanAttr = $cell->rowspan > 1 ? " rowspan=\"{$cell->rowspan}\"" : '';
-                    $cellText   = htmlspecialchars($cell->text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
-                    $cells     .= "<th class=\"tableblock halign-{$halign} valign-{$valign}\"{$colspanAttr}{$rowspanAttr}>\n<p class=\"tableblock\">{$cellText}</p>\n</th>\n";
+                    $cellText   = $table->applySubstitutions($cell->text, self::TITLE_SUBS);
+                    $cells     .= "<th class=\"tableblock halign-{$halign} valign-{$valign}\"{$colspanAttr}{$rowspanAttr}>{$cellText}</th>\n";
                 }
                 $headerCells .= "<tr>\n{$cells}</tr>\n";
             }
@@ -711,8 +807,8 @@ HTML;
                     $valign      = $cell->column->valign;
                     $colspanAttr = $cell->colspan > 1 ? " colspan=\"{$cell->colspan}\"" : '';
                     $rowspanAttr = $cell->rowspan > 1 ? " rowspan=\"{$cell->rowspan}\"" : '';
-                    $cellText    = htmlspecialchars($cell->text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
-                    $cells      .= "<td class=\"tableblock halign-{$halign} valign-{$valign}\"{$colspanAttr}{$rowspanAttr}>\n<p class=\"tableblock\">{$cellText}</p>\n</td>\n";
+                    $cellText    = $table->applySubstitutions($cell->text, self::TITLE_SUBS);
+                    $cells      .= "<td class=\"tableblock halign-{$halign} valign-{$valign}\"{$colspanAttr}{$rowspanAttr}><p class=\"tableblock\">{$cellText}</p></td>\n";
                 }
                 $bodyRows .= "<tr>\n{$cells}</tr>\n";
             }
@@ -728,8 +824,8 @@ HTML;
                 foreach ($row->getCells() as $cell) {
                     $halign     = $cell->column->halign;
                     $valign     = $cell->column->valign;
-                    $cellText   = htmlspecialchars($cell->text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
-                    $cells     .= "<td class=\"tableblock halign-{$halign} valign-{$valign}\">\n<p class=\"tableblock\">{$cellText}</p>\n</td>\n";
+                    $cellText   = $table->applySubstitutions($cell->text, self::TITLE_SUBS);
+                    $cells     .= "<td class=\"tableblock halign-{$halign} valign-{$valign}\"><p class=\"tableblock\">{$cellText}</p></td>\n";
                 }
                 $footRows .= "<tr>\n{$cells}</tr>\n";
             }
@@ -737,7 +833,7 @@ HTML;
         }
 
         return <<<HTML
-<table class="{$tableClass}" style="width:{$width}%">
+<table class="{$tableClass}"{$widthStyle}>
 {$caption}<colgroup>
 {$colgroup}</colgroup>
 {$thead}{$tbody}{$tfoot}</table>
@@ -816,8 +912,14 @@ HTML;
     {
         $html = "<ul class=\"sectlevel{$level}\">\n";
         foreach ($sections as $section) {
-            $id    = $section->getId() ?? '';
-            $title = htmlspecialchars((string) $section->getTitle(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
+            $id       = $section->getId() ?? '';
+            $rawTitle = (string) $section->getTitle();
+            $title    = $section->applySubstitutions($rawTitle, self::TITLE_SUBS);
+
+            if ($section->isNumbered()) {
+                $title = $section->getSectnum() . '. ' . $title;
+            }
+
             $href  = $id !== '' ? " href=\"#{$id}\"" : '';
             $html .= "<li><a{$href}>{$title}</a>";
 

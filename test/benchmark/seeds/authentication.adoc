@@ -1,0 +1,387 @@
+= Webware Framework: Authentication Guide
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:source-highlighter: highlight.js
+:icons: font
+:description: Complete guide to authentication and authorisation in Webware Framework.
+
+Webware provides a composable authentication layer. Each driver is an
+independent package; install only what you need.
+
+== Overview
+
+Authentication in Webware is handled by a pipeline of guards. A guard
+inspects the incoming request, resolves a principal (user/client), and
+attaches it to the request context.
+
+[cols="2,3,1",options="header"]
+|===
+| Guard                   | Use Case                          | Package
+| `JwtGuard`              | Stateless REST APIs               | `webware/auth-jwt`
+| `SessionGuard`          | Browser-based web apps            | `webware/auth-session`
+| `ApiKeyGuard`           | Machine-to-machine API keys       | `webware/auth-apikey`
+| `OAuth2Guard`           | Third-party identity providers    | `webware/auth-oauth2`
+| `BasicGuard`            | Internal tooling / HTTP basic     | `webware/auth-basic`
+|===
+
+Multiple guards can be active simultaneously. The framework tries them in
+the order defined in `config/auth.php`.
+
+== JWT Authentication
+
+=== Installation
+
+[source,bash]
+----
+composer require webware/auth-jwt
+----
+
+=== Configuration
+
+Add to `config/auth.php`:
+
+[source,php]
+----
+<?php
+
+return [
+    'default' => 'jwt',
+    'guards'  => [
+        'jwt' => [
+            'driver'    => 'jwt',
+            'secret'    => env('JWT_SECRET'),
+            'algorithm' => 'HS256',
+            'ttl'       => 3600,          // seconds
+            'refresh'   => 86400,         // refresh window
+            'issuer'    => env('APP_URL'),
+        ],
+    ],
+];
+----
+
+Generate a secret:
+
+[source,bash]
+----
+php bin/webware jwt:generate-secret
+# JWT_SECRET=base64:abc123...  ← add this to .env
+----
+
+=== Issuing Tokens
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use Webware\Auth\AuthManager;
+use Webware\Http\Request;
+use Webware\Http\Response;
+
+final class AuthController
+{
+    public function __construct(private readonly AuthManager $auth) {}
+
+    public function login(Request $request, Response $response): Response
+    {
+        $credentials = $request->json();
+        $token = $this->auth->attempt($credentials['email'], $credentials['password']);
+
+        if ($token === null) {
+            return $response->json(['error' => 'Invalid credentials'], 401);
+        }
+
+        return $response->json([
+            'access_token'  => $token->value(),
+            'token_type'    => 'Bearer',
+            'expires_in'    => $token->ttl(),
+            'refresh_token' => $token->refreshValue(),
+        ]);
+    }
+
+    public function refresh(Request $request, Response $response): Response
+    {
+        $refreshToken = $request->bearerToken();
+        $newToken     = $this->auth->refresh($refreshToken);
+
+        if ($newToken === null) {
+            return $response->json(['error' => 'Invalid or expired refresh token'], 401);
+        }
+
+        return $response->json([
+            'access_token' => $newToken->value(),
+            'expires_in'   => $newToken->ttl(),
+        ]);
+    }
+
+    public function logout(Request $request, Response $response): Response
+    {
+        $this->auth->invalidate($request->bearerToken());
+        return $response->json(['message' => 'Logged out successfully']);
+    }
+}
+----
+
+=== Protecting Routes
+
+[source,php]
+----
+<?php
+
+use Webware\Auth\Middleware\JwtMiddleware;
+
+// Single route
+$router->get('/profile', [ProfileController::class, 'show'])
+       ->middleware(JwtMiddleware::class);
+
+// Route group
+$router->group('/api', static function ($r) {
+    $r->get('/users',        [UserController::class, 'index']);
+    $r->get('/users/{id}',   [UserController::class, 'show']);
+    $r->put('/users/{id}',   [UserController::class, 'update']);
+    $r->delete('/users/{id}',[UserController::class, 'destroy']);
+}, middleware: [JwtMiddleware::class]);
+----
+
+=== Accessing the Authenticated User
+
+[source,php]
+----
+$user = $request->user();          // returns User|null
+$userId = $request->userId();      // returns int|null
+----
+
+NOTE: `$request->user()` returns `null` on unauthenticated requests. Always
+check before accessing user properties.
+
+=== Token Claims
+
+[source,php]
+----
+$claims = $request->jwtClaims();
+$sub    = $claims->subject();       // user ID
+$iat    = $claims->issuedAt();      // DateTimeImmutable
+$exp    = $claims->expiresAt();     // DateTimeImmutable
+$custom = $claims->get('role');     // custom claims
+----
+
+Add custom claims when issuing:
+
+[source,php]
+----
+$token = $this->auth->issue($user, claims: ['role' => 'admin', 'plan' => 'pro']);
+----
+
+== Session Authentication
+
+=== Installation
+
+[source,bash]
+----
+composer require webware/auth-session
+----
+
+=== Configuration
+
+[source,php]
+----
+'guards' => [
+    'web' => [
+        'driver'    => 'session',
+        'provider'  => 'users',
+        'cookie'    => env('SESSION_COOKIE', 'webware_session'),
+        'lifetime'  => 120,          // minutes
+        'expire_on_close' => false,
+    ],
+],
+'providers' => [
+    'users' => [
+        'driver' => 'eloquent',
+        'model'  => App\Model\User::class,
+    ],
+],
+----
+
+=== Login and Logout
+
+[source,php]
+----
+public function login(Request $request, Response $response): Response
+{
+    if ($this->auth->attemptSession($request->post('email'), $request->post('password'))) {
+        return $response->redirect('/dashboard');
+    }
+    return $response->redirect('/login')->withError('Invalid credentials');
+}
+
+public function logout(Request $request, Response $response): Response
+{
+    $this->auth->logout();
+    return $response->redirect('/login');
+}
+----
+
+=== CSRF Protection
+
+Session-authenticated routes are automatically protected by the CSRF middleware.
+Add `_token` to all forms:
+
+[source,html]
+----
+<form method="POST" action="/login">
+    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+    <input type="email"    name="email">
+    <input type="password" name="password">
+    <button type="submit">Login</button>
+</form>
+----
+
+IMPORTANT: Never disable CSRF protection on state-changing routes.
+
+== API Key Authentication
+
+=== Generating Keys
+
+[source,bash]
+----
+php bin/webware apikey:create --name="CI Pipeline" --scopes=read,write
+# Key: wk_live_abc123def456...  (shown once — store it securely)
+----
+
+=== Key Storage
+
+Keys are stored as bcrypt hashes. The plaintext is never stored. Generate
+a table migration:
+
+[source,bash]
+----
+php bin/webware make:migration create_api_keys_table
+----
+
+[source,php]
+----
+// Migration
+Schema::create('api_keys', static function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('key_hash');
+    $table->json('scopes')->nullable();
+    $table->timestamp('last_used_at')->nullable();
+    $table->timestamp('expires_at')->nullable();
+    $table->timestamps();
+    $table->softDeletes();
+});
+----
+
+=== Using Keys in Requests
+
+Pass the key in the `Authorization` header:
+
+[source,http]
+----
+GET /api/v1/users HTTP/1.1
+Host: api.example.com
+Authorization: ApiKey wk_live_abc123def456...
+----
+
+Or as a query parameter (not recommended for production):
+
+[source,http]
+----
+GET /api/v1/users?api_key=wk_live_abc123def456...
+----
+
+WARNING: Query parameter API keys appear in server logs and browser history.
+Use the `Authorization` header in production.
+
+== Authorisation
+
+=== Roles and Permissions
+
+[source,php]
+----
+composer require webware/auth-rbac
+----
+
+Define roles in `config/rbac.php`:
+
+[source,php]
+----
+return [
+    'roles' => [
+        'admin'  => ['users.*', 'posts.*', 'settings.*'],
+        'editor' => ['posts.create', 'posts.update', 'posts.delete'],
+        'viewer' => ['posts.read', 'users.read'],
+    ],
+];
+----
+
+Check permissions in controllers:
+
+[source,php]
+----
+if (! $request->user()->can('posts.delete')) {
+    return $response->json(['error' => 'Forbidden'], 403);
+}
+----
+
+=== Policy Classes
+
+[source,php]
+----
+php bin/webware make:policy PostPolicy
+----
+
+[source,php]
+----
+final class PostPolicy
+{
+    public function update(User $user, Post $post): bool
+    {
+        return $user->id === $post->author_id || $user->hasRole('admin');
+    }
+
+    public function delete(User $user, Post $post): bool
+    {
+        return $user->hasRole('admin');
+    }
+}
+----
+
+Register policies:
+
+[source,php]
+----
+$gate->policy(Post::class, PostPolicy::class);
+----
+
+Use in controllers:
+
+[source,php]
+----
+$this->authorize('update', $post);   // throws 403 if denied
+// or
+if ($this->can('update', $post)) {
+    // ...
+}
+----
+
+== Security Hardening
+
+[cols="3,4",options="header"]
+|===
+| Recommendation                        | Implementation
+| Rotate JWT secrets regularly          | `php bin/webware jwt:rotate-secret`
+| Enforce HTTPS for cookie transmission | `SESSION_SECURE_COOKIE=true` in `.env`
+| Short JWT TTLs with refresh rotation  | `ttl: 900` (15 min), `refresh: 86400`
+| Revoke tokens on password change      | Listen to `PasswordChanged` event
+| Rate-limit login endpoints            | `RateLimitMiddleware` on `/auth/login`
+| Log authentication events             | `webware/audit-log` package
+|===
+
+TIP: Use `php bin/webware auth:audit` to view recent authentication events
+from the audit log.

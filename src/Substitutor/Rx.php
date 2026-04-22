@@ -74,7 +74,7 @@ final class Rx
 
     // ── Thematic / page breaks ────────────────────────────────────────────────
 
-    public const string THEMATIC_BREAK = "/^'''\s*$/";
+    public const string THEMATIC_BREAK = "/^('''|---)\s*$/";
     public const string PAGE_BREAK     = '/^<<<\s*$/';
 
     // ── Substitution pipeline ─────────────────────────────────────────────────

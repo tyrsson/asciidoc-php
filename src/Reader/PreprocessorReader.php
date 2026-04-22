@@ -80,6 +80,78 @@ class PreprocessorReader extends Reader
         /** @var \SplStack<ConditionalContext> $conditionalStack */
         $conditionalStack       = new \SplStack();
         $this->conditionalStack = $conditionalStack;
+
+        // When :skip-front-matter: is set, strip leading YAML front matter
+        // (--- … ---) before the parser sees any lines.
+        if ($document->hasAttribute('skip-front-matter')) {
+            $this->skipFrontMatter();
+        }
+    }
+
+    // ── Front matter ──────────────────────────────────────────────────────────
+
+    /**
+     * If the source begins with a YAML front matter block (--- … ---), consume
+     * those lines, store the raw YAML in the `front-matter` document attribute,
+     * and promote each scalar key as a document attribute.
+     *
+     * Spec: https://docs.asciidoctor.org/asciidoctor/latest/html-backend/skip-front-matter/
+     */
+    private function skipFrontMatter(): void
+    {
+        // The lines array is stored in reverse order — last element is first line.
+        $first = end($this->lines);
+        if ($first !== '---') {
+            return;
+        }
+
+        // Consume the opening delimiter.
+        array_pop($this->lines);
+
+        $yamlLines = [];
+
+        while (true) {
+            $line = array_pop($this->lines);
+
+            if ($line === null) {
+                // EOF before closing delimiter — restore lines and bail out.
+                array_push($this->lines, ...$yamlLines);
+                $this->lines[] = '---';
+                return;
+            }
+
+            if ($line === '---') {
+                // Closing delimiter found — done.
+                break;
+            }
+
+            $yamlLines[] = $line;
+        }
+
+        $raw = implode("\n", $yamlLines);
+
+        // Store the raw YAML so integrations can access it.
+        $this->document->setAttribute('front-matter', $raw);
+
+        // Promote scalar key: value pairs as document attributes.
+        foreach ($yamlLines as $yamlLine) {
+            if (preg_match('/^([a-zA-Z0-9_-]+)\s*:\s*(.*)$/', $yamlLine, $m) === 1) {
+                $key   = $m[1];
+                $value = trim($m[2]);
+                // Strip optional surrounding quotes from simple scalar strings.
+                if (
+                    strlen($value) >= 2 &&
+                    (($value[0] === '"' && $value[-1] === '"') ||
+                     ($value[0] === "'" && $value[-1] === "'"))
+                ) {
+                    $value = substr($value, 1, -1);
+                }
+                // Do not overwrite attributes already set on the document.
+                if (!$this->document->hasAttribute($key)) {
+                    $this->document->setAttribute($key, $value);
+                }
+            }
+        }
     }
 
     // ── Core override ─────────────────────────────────────────────────────────

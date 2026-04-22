@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="asciidoc-php 0.1.0">
-<title>AsciiDoc PHP Integration Guide</title>
+<title>Webware Framework: Authentication Guide [Variant 1]</title>
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
 /* Uncomment the following line when using as a custom stylesheet */
@@ -433,159 +433,292 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
 </head>
-<body class="article toc2 toc-left">
-<div id="toc" class="toc2">
+<body class="article">
+<div id="header">
+<h1>Webware Framework: Authentication Guide [Variant 1]</h1>
+<div class="details"><span class="author">Webware Team</span></div>
+<div class="details"><span class="revdate">2026-01-01</span></div>
+<div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_introduction">Introduction</a>
+<li><a href="#_overview">Overview</a></li>
+<li><a href="#_jwt_authentication">JWT Authentication</a>
 <ul class="sectlevel2">
-<li><a href="#_sub_section">Sub-section</a></li>
+<li><a href="#_installation">Installation</a></li>
+<li><a href="#_configuration">Configuration</a></li>
+<li><a href="#_issuing_tokens">Issuing Tokens</a></li>
+<li><a href="#_protecting_routes">Protecting Routes</a></li>
+<li><a href="#_accessing_the_authenticated_user">Accessing the Authenticated User</a></li>
+<li><a href="#_token_claims">Token Claims</a></li>
 </ul>
 </li>
-<li><a href="#_lists">Lists</a>
+<li><a href="#_session_authentication">Session Authentication</a>
 <ul class="sectlevel2">
-<li><a href="#_unordered_list">Unordered List</a></li>
-<li><a href="#_ordered_list">Ordered List</a></li>
+<li><a href="#_installation">Installation</a></li>
+<li><a href="#_configuration">Configuration</a></li>
+<li><a href="#_login_and_logout">Login and Logout</a></li>
+<li><a href="#_csrf_protection">CSRF Protection</a></li>
 </ul>
 </li>
-<li><a href="#_source_code">Source Code</a></li>
-<li><a href="#_tables">Tables</a></li>
-<li><a href="#_admonitions">Admonitions</a></li>
-<li><a href="#_thematic_break">Thematic Break</a></li>
-<li><a href="#_end">End</a></li>
+<li><a href="#_api_key_authentication">API Key Authentication</a>
+<ul class="sectlevel2">
+<li><a href="#_generating_keys">Generating Keys</a></li>
+<li><a href="#_key_storage">Key Storage</a></li>
+<li><a href="#_using_keys_in_requests">Using Keys in Requests</a></li>
+</ul>
+</li>
+<li><a href="#_authorisation">Authorisation</a>
+<ul class="sectlevel2">
+<li><a href="#_roles_and_permissions">Roles and Permissions</a></li>
+<li><a href="#_policy_classes">Policy Classes</a></li>
+</ul>
+</li>
+<li><a href="#_security_hardening">Security Hardening</a></li>
 </ul>
 </div>
-<div id="header">
-<h1>AsciiDoc PHP Integration Guide</h1>
-<div class="details"><span class="author">Author Name</span></div>
-<div class="details"><span class="revdate">2024-01-01</span></div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is the preamble paragraph.</p>
+<p>This is corpus variant <strong>1</strong> of the <code>authentication</code> seed, generated to exercise the asynchronous document parser. Each variant contains slightly different content to avoid identical parse trees.</p>
+</div>
+<div class="paragraph">
+<p>Webware provides a composable authentication layer. Each driver is an
+independent package; install only what you need.</p>
 </div>
 </div>
 </div>
-<div class="sect1" id="_introduction">
-<h2>Introduction</h2>
+<div class="sect1" id="_overview">
+<h2>Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section introduces the document.</p>
+<p>Authentication in Webware is handled by a pipeline of guards. A guard
+inspects the incoming request, resolves a principal (user/client), and
+attaches it to the request context.</p>
 </div>
-<div class="sect2" id="_sub_section">
-<h3>Sub-section</h3>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A nested section with <strong>bold</strong>, <em>italic</em>, and <code>monospaced</code> inline formatting.</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_lists">
-<h2>Lists</h2>
-<div class="sectionbody">
-<div class="sect2" id="_unordered_list">
-<h3>Unordered List</h3>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>Item one</p>
-</li>
-<li>
-<p>Item two</p>
-</li>
-<li>
-<p>Item three</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect2" id="_ordered_list">
-<h3>Ordered List</h3>
-<div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>First item</p>
-</li>
-<li>
-<p>Second item</p>
-</li>
-<li>
-<p>Third item</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_source_code">
-<h2>Source Code</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
-echo &quot;Hello, World!\n&quot;;</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_tables">
-<h2>Tables</h2>
-<div class="sectionbody">
 <table class="tableblock frame-all grid-all" style="width:100%">
 <colgroup>
-<col style="width: 16.67%;">
 <col style="width: 33.33%;">
 <col style="width: 50%;">
+<col style="width: 16.67%;">
 </colgroup>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Name</p>
+<p class="tableblock">Guard</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Role</p>
+<p class="tableblock">Use Case</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Department</p>
-</td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Alice</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Developer</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Engineering</p>
+<p class="tableblock">Package</p>
 </td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Bob</p>
+<p class="tableblock">`JwtGuard`</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Designer</p>
+<p class="tableblock">Stateless REST APIs</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Creative</p>
+<p class="tableblock">`webware/auth-jwt`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`SessionGuard`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Browser-based web apps</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`webware/auth-session`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`ApiKeyGuard`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Machine-to-machine API keys</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`webware/auth-apikey`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`OAuth2Guard`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Third-party identity providers</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`webware/auth-oauth2`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`BasicGuard`</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Internal tooling / HTTP basic</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`webware/auth-basic`</p>
 </td>
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>Multiple guards can be active simultaneously. The framework tries them in
+the order defined in <code>config/auth.php</code>.</p>
 </div>
 </div>
-<div class="sect1" id="_admonitions">
-<h2>Admonitions</h2>
+</div>
+<div class="sect1" id="_jwt_authentication">
+<h2>JWT Authentication</h2>
 <div class="sectionbody">
+<div class="sect2" id="_installation">
+<h3>Installation</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">composer require webware/auth-jwt</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_configuration">
+<h3>Configuration</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Add to <code>config/auth.php</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
+
+return [
+    &#039;default&#039; =&gt; &#039;jwt&#039;,
+    &#039;guards&#039;  =&gt; [
+        &#039;jwt&#039; =&gt; [
+            &#039;driver&#039;    =&gt; &#039;jwt&#039;,
+            &#039;secret&#039;    =&gt; env(&#039;JWT_SECRET&#039;),
+            &#039;algorithm&#039; =&gt; &#039;HS256&#039;,
+            &#039;ttl&#039;       =&gt; 3600,          // seconds
+            &#039;refresh&#039;   =&gt; 86400,         // refresh window
+            &#039;issuer&#039;    =&gt; env(&#039;APP_URL&#039;),
+        ],
+    ],
+];</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Generate a secret:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware jwt:generate-secret
+# JWT_SECRET=base64:abc123...  ← add this to .env</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_issuing_tokens">
+<h3>Issuing Tokens</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use Webware\Auth\AuthManager;
+use Webware\Http\Request;
+use Webware\Http\Response;
+
+final class AuthController
+{
+    public function __construct(private readonly AuthManager $auth) {}
+
+    public function login(Request $request, Response $response): Response
+    {
+        $credentials = $request-&gt;json();
+        $token = $this-&gt;auth-&gt;attempt($credentials[&#039;email&#039;], $credentials[&#039;password&#039;]);
+
+        if ($token === null) {
+            return $response-&gt;json([&#039;error&#039; =&gt; &#039;Invalid credentials&#039;], 401);
+        }
+
+        return $response-&gt;json([
+            &#039;access_token&#039;  =&gt; $token-&gt;value(),
+            &#039;token_type&#039;    =&gt; &#039;Bearer&#039;,
+            &#039;expires_in&#039;    =&gt; $token-&gt;ttl(),
+            &#039;refresh_token&#039; =&gt; $token-&gt;refreshValue(),
+        ]);
+    }
+
+    public function refresh(Request $request, Response $response): Response
+    {
+        $refreshToken = $request-&gt;bearerToken();
+        $newToken     = $this-&gt;auth-&gt;refresh($refreshToken);
+
+        if ($newToken === null) {
+            return $response-&gt;json([&#039;error&#039; =&gt; &#039;Invalid or expired refresh token&#039;], 401);
+        }
+
+        return $response-&gt;json([
+            &#039;access_token&#039; =&gt; $newToken-&gt;value(),
+            &#039;expires_in&#039;   =&gt; $newToken-&gt;ttl(),
+        ]);
+    }
+
+    public function logout(Request $request, Response $response): Response
+    {
+        $this-&gt;auth-&gt;invalidate($request-&gt;bearerToken());
+        return $response-&gt;json([&#039;message&#039; =&gt; &#039;Logged out successfully&#039;]);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_protecting_routes">
+<h3>Protecting Routes</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
+
+use Webware\Auth\Middleware\JwtMiddleware;
+
+$router-&gt;get(&#039;/profile&#039;, [ProfileController::class, &#039;show&#039;])
+       -&gt;middleware(JwtMiddleware::class);
+
+$router-&gt;group(&#039;/api&#039;, static function ($r) {
+    $r-&gt;get(&#039;/users&#039;,        [UserController::class, &#039;index&#039;]);
+    $r-&gt;get(&#039;/users/{id}&#039;,   [UserController::class, &#039;show&#039;]);
+    $r-&gt;put(&#039;/users/{id}&#039;,   [UserController::class, &#039;update&#039;]);
+    $r-&gt;delete(&#039;/users/{id}&#039;,[UserController::class, &#039;destroy&#039;]);
+}, middleware: [JwtMiddleware::class]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_accessing_the_authenticated_user">
+<h3>Accessing the Authenticated User</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$user = $request-&gt;user();          // returns User|null
+$userId = $request-&gt;userId();      // returns int|null</code></pre>
+</div>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -593,20 +726,190 @@ echo &quot;Hello, World!\n&quot;;</code></pre>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-This is a note admonition.</td>
+<code>$request-&gt;user()</code> returns <code>null</code> on unauthenticated requests. Always
+check before accessing user properties.</td>
 </tr>
 </table>
 </div>
-<div class="admonitionblock tip">
+</div>
+</div>
+<div class="sect2" id="_token_claims">
+<h3>Token Claims</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$claims = $request-&gt;jwtClaims();
+$sub    = $claims-&gt;subject();       // user ID
+$iat    = $claims-&gt;issuedAt();      // DateTimeImmutable
+$exp    = $claims-&gt;expiresAt();     // DateTimeImmutable
+$custom = $claims-&gt;get(&#039;role&#039;);     // custom claims</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Add custom claims when issuing:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$token = $this-&gt;auth-&gt;issue($user, claims: [&#039;role&#039; =&gt; &#039;admin&#039;, &#039;plan&#039; =&gt; &#039;pro&#039;]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_session_authentication">
+<h2>Session Authentication</h2>
+<div class="sectionbody">
+<div class="sect2" id="_installation">
+<h3>Installation</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">composer require webware/auth-session</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_configuration">
+<h3>Configuration</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&#039;guards&#039; =&gt; [
+    &#039;web&#039; =&gt; [
+        &#039;driver&#039;    =&gt; &#039;session&#039;,
+        &#039;provider&#039;  =&gt; &#039;users&#039;,
+        &#039;cookie&#039;    =&gt; env(&#039;SESSION_COOKIE&#039;, &#039;webware_session&#039;),
+        &#039;lifetime&#039;  =&gt; 120,          // minutes
+        &#039;expire_on_close&#039; =&gt; false,
+    ],
+],
+&#039;providers&#039; =&gt; [
+    &#039;users&#039; =&gt; [
+        &#039;driver&#039; =&gt; &#039;eloquent&#039;,
+        &#039;model&#039;  =&gt; App\Model\User::class,
+    ],
+],</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_login_and_logout">
+<h3>Login and Logout</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">public function login(Request $request, Response $response): Response
+{
+    if ($this-&gt;auth-&gt;attemptSession($request-&gt;post(&#039;email&#039;), $request-&gt;post(&#039;password&#039;))) {
+        return $response-&gt;redirect(&#039;/dashboard&#039;);
+    }
+    return $response-&gt;redirect(&#039;/login&#039;)-&gt;withError(&#039;Invalid credentials&#039;);
+}
+
+public function logout(Request $request, Response $response): Response
+{
+    $this-&gt;auth-&gt;logout();
+    return $response-&gt;redirect(&#039;/login&#039;);
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_csrf_protection">
+<h3>CSRF Protection</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Session-authenticated routes are automatically protected by the CSRF middleware.
+Add <code>_token</code> to all forms:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-html hljs" data-lang="html">&lt;form method=&quot;POST&quot; action=&quot;/login&quot;&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;_token&quot; value=&quot;{{ csrf_token() }}&quot;&gt;
+    &lt;input type=&quot;email&quot;    name=&quot;email&quot;&gt;
+    &lt;input type=&quot;password&quot; name=&quot;password&quot;&gt;
+    &lt;button type=&quot;submit&quot;&gt;Login&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-This is a tip admonition.</td>
+Never disable CSRF protection on state-changing routes.</td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_api_key_authentication">
+<h2>API Key Authentication</h2>
+<div class="sectionbody">
+<div class="sect2" id="_generating_keys">
+<h3>Generating Keys</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware apikey:create --name=&quot;CI Pipeline&quot; --scopes=read,write
+# Key: wk_live_abc123def456...  (shown once — store it securely)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_key_storage">
+<h3>Key Storage</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keys are stored as bcrypt hashes. The plaintext is never stored. Generate
+a table migration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware make:migration create_api_keys_table</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">Schema::create(&#039;api_keys&#039;, static function (Blueprint $table) {
+    $table-&gt;id();
+    $table-&gt;string(&#039;name&#039;);
+    $table-&gt;string(&#039;key_hash&#039;);
+    $table-&gt;json(&#039;scopes&#039;)-&gt;nullable();
+    $table-&gt;timestamp(&#039;last_used_at&#039;)-&gt;nullable();
+    $table-&gt;timestamp(&#039;expires_at&#039;)-&gt;nullable();
+    $table-&gt;timestamps();
+    $table-&gt;softDeletes();
+});</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_using_keys_in_requests">
+<h3>Using Keys in Requests</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Pass the key in the <code>Authorization</code> header:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-http hljs" data-lang="http">GET /api/v1/users HTTP/1.1
+Host: api.example.com
+Authorization: ApiKey wk_live_abc123def456...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or as a query parameter (not recommended for production):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-http hljs" data-lang="http">GET /api/v1/users?api_key=wk_live_abc123def456...</code></pre>
+</div>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -615,21 +918,178 @@ This is a tip admonition.</td>
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-This is a warning admonition.</td>
+Query parameter API keys appear in server logs and browser history.
+Use the <code>Authorization</code> header in production.</td>
 </tr>
 </table>
 </div>
 </div>
 </div>
-<div class="sect1" id="_thematic_break">
-<h2>Thematic Break</h2>
-<div class="sectionbody">
-<hr>
 </div>
 </div>
-<div class="sect1" id="_end">
-<h2>End</h2>
+<div class="sect1" id="_authorisation">
+<h2>Authorisation</h2>
 <div class="sectionbody">
+<div class="sect2" id="_roles_and_permissions">
+<h3>Roles and Permissions</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">composer require webware/auth-rbac</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Define roles in <code>config/rbac.php</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">return [
+    &#039;roles&#039; =&gt; [
+        &#039;admin&#039;  =&gt; [&#039;users.*&#039;, &#039;posts.*&#039;, &#039;settings.*&#039;],
+        &#039;editor&#039; =&gt; [&#039;posts.create&#039;, &#039;posts.update&#039;, &#039;posts.delete&#039;],
+        &#039;viewer&#039; =&gt; [&#039;posts.read&#039;, &#039;users.read&#039;],
+    ],
+];</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check permissions in controllers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">if (! $request-&gt;user()-&gt;can(&#039;posts.delete&#039;)) {
+    return $response-&gt;json([&#039;error&#039; =&gt; &#039;Forbidden&#039;], 403);
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_policy_classes">
+<h3>Policy Classes</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">php bin/webware make:policy PostPolicy</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">final class PostPolicy
+{
+    public function update(User $user, Post $post): bool
+    {
+        return $user-&gt;id === $post-&gt;author_id || $user-&gt;hasRole(&#039;admin&#039;);
+    }
+
+    public function delete(User $user, Post $post): bool
+    {
+        return $user-&gt;hasRole(&#039;admin&#039;);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Register policies:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$gate-&gt;policy(Post::class, PostPolicy::class);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use in controllers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$this-&gt;authorize(&#039;update&#039;, $post);   // throws 403 if denied
+if ($this-&gt;can(&#039;update&#039;, $post)) {
+    // ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_security_hardening">
+<h2>Security Hardening</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all" style="width:100%">
+<colgroup>
+<col style="width: 42.86%;">
+<col style="width: 57.14%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Recommendation</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Implementation</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Rotate JWT secrets regularly</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`php bin/webware jwt:rotate-secret`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Enforce HTTPS for cookie transmission</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`SESSION_SECURE_COOKIE=true` in `.env`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Short JWT TTLs with refresh rotation</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`ttl: 900` (15 min), `refresh: 86400`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Revoke tokens on password change</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Listen to `PasswordChanged` event</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Rate-limit login endpoints</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`RateLimitMiddleware` on `/auth/login`</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Log authentication events</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">`webware/audit-log` package</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Use <code>php bin/webware auth:audit</code> to view recent authentication events
+from the audit log.</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>

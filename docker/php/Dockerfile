@@ -3,8 +3,7 @@
 # Pin to a known-good digest once identified.
 # To get the digest of a running container: docker inspect <container> | grep RepoDigests
 # Then use: FROM trueasync/php-true-async@sha256:<digest>
-FROM trueasync/php-true-async:latest AS base
+FROM trueasync/php-true-async:latest
 
 WORKDIR /workspaces/asciidoc-php
 
-CMD ["php", "bin/mezzio-async", "start"]

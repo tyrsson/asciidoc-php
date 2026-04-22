@@ -26,6 +26,9 @@
             "composer/package-versions-deprecated": true
         }
     },
+    "bin": [
+        "bin/asciidoc-php"
+    ],
     "require": {
         "php": "~8.4.0 || ~8.5.0 || ~8.6.0"
     },
@@ -40,6 +43,9 @@
         "psr-4": {
             "Webware\\AsciidocPhp\\": "src/"
         }
+    },
+    "extra": {
+        "resources-dir": "resources"
     },
     "autoload-dev": {
         "psr-4": {
@@ -63,6 +69,9 @@
         "sa": "vendor/bin/phpstan analyse --memory-limit=256M",
         "sa-gen-baseline": "vendor/bin/phpstan analyse --memory-limit=256M --generate-baseline",
         "sa-verbose": "vendor/bin/phpstan analyse --memory-limit=256M -vv",
-        "upload-coverage": "coveralls -v"
+        "upload-coverage": "coveralls -v",
+        "render": "php bin/asciidoc-php -o test/results/full-document.html test/asset/integration/full-document.adoc",
+        "render-embedded": "php bin/asciidoc-php -s -o test/results/full-document-embedded.html test/asset/integration/full-document.adoc",
+        "render-preview": "php bin/render-preview test/asset/integration/full-document.adoc test/results/full-document-preview.html"
     }
 }

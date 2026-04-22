@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "58b390271d953bf84e1f00d8a687a204",
+    "content-hash": "761588345aa352a4c89307e9051ff57f",
     "packages": [],
     "packages-dev": [
         {
@@ -2078,12 +2078,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Roave/SecurityAdvisories.git",
-                "reference": "f41f65e527608a9a76cfbafd873756ed76c5452d"
+                "reference": "10b8a93511210c9bae3be31f4fe13c3ff974cad4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/f41f65e527608a9a76cfbafd873756ed76c5452d",
-                "reference": "f41f65e527608a9a76cfbafd873756ed76c5452d",
+                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/10b8a93511210c9bae3be31f4fe13c3ff974cad4",
+                "reference": "10b8a93511210c9bae3be31f4fe13c3ff974cad4",
                 "shasum": ""
             },
             "conflict": {
@@ -2197,7 +2197,7 @@
                 "cesnet/simplesamlphp-module-proxystatistics": "<3.1",
                 "chriskacerguis/codeigniter-restserver": "<=2.7.1",
                 "chrome-php/chrome": "<1.14",
-                "ci4-cms-erp/ci4ms": "<=0.31.3",
+                "ci4-cms-erp/ci4ms": "<0.31.5",
                 "civicrm/civicrm-core": ">=4.2,<4.2.9|>=4.3,<4.3.3",
                 "ckeditor/ckeditor": "<4.25",
                 "clickstorm/cs-seo": ">=6,<6.8|>=7,<7.5|>=8,<8.4|>=9,<9.3",
@@ -3125,7 +3125,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-04-21T17:25:01+00:00"
+            "time": "2026-04-22T18:27:19+00:00"
         },
         {
             "name": "sebastian/cli-parser",

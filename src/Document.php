@@ -282,6 +282,7 @@ class Document extends AbstractBlock implements DocumentInterface
             'table-caption'       => 'Table',
             'figure-caption'      => 'Figure',
             'example-caption'     => 'Example',
+            'last-update-label'   => 'Last updated',
         ];
 
         foreach ($defaults as $name => $value) {

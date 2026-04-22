@@ -72,6 +72,11 @@
         "upload-coverage": "coveralls -v",
         "render": "php bin/asciidoc-php -o test/results/full-document.html test/asset/integration/full-document.adoc",
         "render-embedded": "php bin/asciidoc-php -s -o test/results/full-document-embedded.html test/asset/integration/full-document.adoc",
-        "render-preview": "php bin/render-preview test/asset/integration/full-document.adoc test/results/full-document-preview.html"
+        "render-preview": "php bin/render-preview test/asset/integration/full-document.adoc test/results/full-document-preview.html",
+        "generate-corpus": "php bin/generate-benchmark-corpus",
+        "benchmark": "php bin/benchmark",
+        "benchmark-seeds": "php bin/benchmark --dir=test/benchmark/seeds",
+        "benchmark-json": "php bin/benchmark --output=json",
+        "benchmark-csv": "php bin/benchmark --output=csv"
     }
 }

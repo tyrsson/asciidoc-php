@@ -1,0 +1,185 @@
+= Webware Framework: Quickstart Guide
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:source-highlighter: highlight.js
+:icons: font
+:description: Get up and running with Webware Framework in under five minutes.
+
+This guide walks you through installing Webware Framework, creating your first
+project, and running a basic application.
+
+== Prerequisites
+
+Before you begin, ensure your environment meets the following requirements:
+
+[cols="1,2",options="header"]
+|===
+| Requirement | Version
+| PHP         | 8.4 or higher
+| Composer    | 2.x
+| ext-json    | Bundled with PHP
+| ext-mbstring| Bundled with PHP
+|===
+
+WARNING: PHP versions below 8.4 are not supported and will not receive backports.
+
+== Installation
+
+=== Via Composer (Recommended)
+
+[source,bash]
+----
+composer create-project webware/framework my-project
+cd my-project
+----
+
+=== Manual Download
+
+Download the latest release archive and extract it:
+
+[source,bash]
+----
+wget https://github.com/webware/framework/archive/refs/tags/v1.0.0.tar.gz
+tar -xzf v1.0.0.tar.gz
+cd framework-1.0.0
+composer install
+----
+
+NOTE: Manual installation bypasses Composer's dependency verification.
+Always verify the archive checksum before extracting.
+
+== First-Run Configuration
+
+=== Environment File
+
+Copy the example environment file and generate an application key:
+
+[source,bash]
+----
+cp .env.example .env
+php bin/webware key:generate
+----
+
+The `.env` file controls all environment-specific settings:
+
+[source,ini]
+----
+APP_NAME=MyApp
+APP_ENV=local
+APP_DEBUG=true
+APP_KEY=base64:GENERATED_BY_COMMAND_ABOVE
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=myapp
+DB_USERNAME=root
+DB_PASSWORD=secret
+
+CACHE_DRIVER=file
+LOG_CHANNEL=daily
+----
+
+=== Database Migrations
+
+Run the bundled migrations to create the application schema:
+
+[source,bash]
+----
+php bin/webware migrate
+----
+
+TIP: Use `--seed` to populate demo data: `php bin/webware migrate --seed`
+
+== Your First Route
+
+Open `config/routes.php` and add a route:
+
+[source,php]
+----
+<?php
+
+use Webware\Router\Router;
+
+$router = new Router();
+
+$router->get('/', static function ($req, $res) {
+    return $res->json(['message' => 'Hello, World!', 'status' => 'ok']);
+});
+
+$router->get('/ping', static function ($req, $res) {
+    return $res->text('pong');
+});
+
+return $router;
+----
+
+== Your First Controller
+
+Generate a controller scaffold:
+
+[source,bash]
+----
+php bin/webware make:controller HomeController
+----
+
+This creates `src/Controller/HomeController.php`:
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use Webware\Http\Request;
+use Webware\Http\Response;
+
+final class HomeController
+{
+    public function index(Request $request, Response $response): Response
+    {
+        return $response->view('home/index', [
+            'title'   => 'Welcome to Webware',
+            'version' => '1.0.0',
+        ]);
+    }
+
+    public function show(Request $request, Response $response, int $id): Response
+    {
+        return $response->json(['id' => $id]);
+    }
+}
+----
+
+Wire the controller into `config/routes.php`:
+
+[source,php]
+----
+$router->get('/', [HomeController::class, 'index']);
+$router->get('/items/{id}', [HomeController::class, 'show']);
+----
+
+== Running the Application
+
+Start the built-in development server:
+
+[source,bash]
+----
+php bin/webware serve
+# or with a custom port:
+php bin/webware serve --port=9000
+----
+
+Your application is now available at `http://localhost:8080`.
+
+TIP: Pass `--watch` to enable automatic reload on file changes.
+
+== What's Next?
+
+* xref:authentication.adoc[Authentication] — Secure your application with JWT or session auth
+* xref:routing.adoc[Routing] — Parameterized routes, groups, and middleware stacks
+* xref:middleware.adoc[Middleware] — Request/response pipeline customisation
+* xref:configuration-reference.adoc[Configuration Reference] — Every option documented

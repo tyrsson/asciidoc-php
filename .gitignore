@@ -9,3 +9,7 @@
 /phpunit.xml
 /vendor/
 /.vscode
+
+# Benchmark corpus (generated — do not commit)
+/test/benchmark/corpus/*
+!/test/benchmark/corpus/.gitkeep

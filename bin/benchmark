@@ -1,0 +1,262 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * AsciiDoc-PHP benchmark runner.
+ *
+ * Times Asciidoc::convertFile() on all .adoc files in a directory and
+ * reports per-file latency, throughput, and aggregate statistics.
+ *
+ * Usage:
+ *   php bin/benchmark [--dir=PATH] [--iterations=N] [--warmup=N] [--output=FORMAT]
+ *
+ * Options:
+ *   --dir=PATH        Directory containing .adoc files to benchmark
+ *                     (default: test/benchmark/corpus; falls back to test/benchmark/seeds)
+ *   --iterations=N    Number of full passes over the file set (default: 3)
+ *   --warmup=N        Warmup passes before timing begins (default: 1)
+ *   --output=FORMAT   Output format: table (default), csv, json
+ */
+
+// Bootstrap the autoloader
+$root       = dirname(__DIR__);
+$autoloader = $root . '/vendor/autoload.php';
+
+if (! file_exists($autoloader)) {
+    fwrite(STDERR, "Error: vendor/autoload.php not found. Run `composer install` first.\n");
+    exit(1);
+}
+
+require $autoloader;
+
+use Webware\AsciidocPhp\Asciidoc;
+
+// ---------------------------------------------------------------------------
+// Parse CLI options
+// ---------------------------------------------------------------------------
+
+$opts = getopt('', ['dir:', 'iterations:', 'warmup:', 'output:']);
+
+$corpusDir  = $opts['dir']        ?? null;
+$iterations = (int) ($opts['iterations'] ?? 3);
+$warmup     = (int) ($opts['warmup']     ?? 1);
+$format     = $opts['output']     ?? 'table';
+
+if ($corpusDir === null) {
+    $defaultCorpus = $root . '/test/benchmark/corpus';
+    $fallbackSeeds = $root . '/test/benchmark/seeds';
+    $corpusDir     = (is_dir($defaultCorpus) && count(glob($defaultCorpus . '/*.adoc') ?: []) > 0)
+        ? $defaultCorpus
+        : $fallbackSeeds;
+}
+
+if (! is_dir($corpusDir)) {
+    fwrite(STDERR, "Error: directory not found: {$corpusDir}\n");
+    exit(1);
+}
+
+$files = glob($corpusDir . '/*.adoc') ?: [];
+if ($files === []) {
+    fwrite(STDERR, "Error: no .adoc files found in {$corpusDir}\n");
+    fwrite(STDERR, "Run `php bin/generate-benchmark-corpus` to generate corpus files first.\n");
+    exit(1);
+}
+
+sort($files);
+
+if (! in_array($format, ['table', 'csv', 'json'], true)) {
+    fwrite(STDERR, "Error: --output must be one of: table, csv, json\n");
+    exit(1);
+}
+
+// ---------------------------------------------------------------------------
+// Collect file sizes
+// ---------------------------------------------------------------------------
+
+/** @var array<string, int> $fileSizes */
+$fileSizes = [];
+foreach ($files as $f) {
+    $size = filesize($f);
+    $fileSizes[$f] = $size !== false ? $size : 0;
+}
+
+$totalBytes = array_sum($fileSizes);
+$fileCount  = count($files);
+
+// ---------------------------------------------------------------------------
+// Warmup passes
+// ---------------------------------------------------------------------------
+
+if ($warmup > 0) {
+    fwrite(STDERR, "Warming up ({$warmup} pass" . ($warmup > 1 ? 'es' : '') . ")...\n");
+    for ($w = 0; $w < $warmup; $w++) {
+        foreach ($files as $file) {
+            Asciidoc::convertFile($file);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Benchmark passes
+// ---------------------------------------------------------------------------
+
+fwrite(STDERR, "Benchmarking {$fileCount} files × {$iterations} iteration" . ($iterations > 1 ? 's' : '') . "...\n");
+
+/** @var array<string, list<float>> $timingsPerFile  microseconds */
+$timingsPerFile = [];
+
+for ($it = 0; $it < $iterations; $it++) {
+    foreach ($files as $file) {
+        $start = hrtime(true);
+        Asciidoc::convertFile($file);
+        $end = hrtime(true);
+
+        $timingsPerFile[$file][] = ($end - $start) / 1_000; // → microseconds
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Compute statistics
+// ---------------------------------------------------------------------------
+
+/**
+ * @param list<float> $values
+ * @return array{min: float, max: float, avg: float, median: float, p95: float}
+ */
+function stats(array $values): array
+{
+    sort($values);
+    $n      = count($values);
+    $sum    = array_sum($values);
+    $avg    = $sum / $n;
+    $median = $n % 2 === 0
+        ? ($values[$n / 2 - 1] + $values[$n / 2]) / 2
+        : $values[(int) ($n / 2)];
+    $p95idx = (int) ceil($n * 0.95) - 1;
+    $p95    = $values[max(0, $p95idx)];
+
+    return [
+        'min'    => $values[0],
+        'max'    => $values[$n - 1],
+        'avg'    => $avg,
+        'median' => $median,
+        'p95'    => $p95,
+    ];
+}
+
+/** @var array<string, array{min: float, max: float, avg: float, median: float, p95: float}> $fileStats */
+$fileStats = [];
+foreach ($timingsPerFile as $file => $timings) {
+    $fileStats[$file] = stats($timings);
+}
+
+// Aggregate across all files × all iterations (one pass = sum of all file times)
+$passTimings = [];
+for ($it = 0; $it < $iterations; $it++) {
+    $passTotal = 0.0;
+    foreach ($files as $file) {
+        $passTotal += $timingsPerFile[$file][$it];
+    }
+    $passTimings[] = $passTotal;
+}
+
+$passStats = stats($passTimings);
+
+// ---------------------------------------------------------------------------
+// Output
+// ---------------------------------------------------------------------------
+
+/**
+ * Format microseconds to a human-readable string.
+ */
+function formatUs(float $us): string
+{
+    if ($us >= 1_000_000) {
+        return sprintf('%.3f s ', $us / 1_000_000);
+    }
+    if ($us >= 1_000) {
+        return sprintf('%.2f ms', $us / 1_000);
+    }
+    return sprintf('%.1f µs', $us);
+}
+
+if ($format === 'json') {
+    $output = [
+        'config' => [
+            'dir'        => $corpusDir,
+            'files'      => $fileCount,
+            'iterations' => $iterations,
+            'warmup'     => $warmup,
+            'total_bytes'=> $totalBytes,
+        ],
+        'pass_stats_us' => $passStats,
+        'files' => array_map(
+            static fn(string $f, array $s) => [
+                'file'      => basename($f),
+                'bytes'     => $fileSizes[$f],
+                'stats_us'  => $s,
+            ],
+            array_keys($fileStats),
+            array_values($fileStats),
+        ),
+    ];
+    echo json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "\n";
+
+} elseif ($format === 'csv') {
+    echo "file,bytes,min_us,avg_us,median_us,p95_us,max_us\n";
+    foreach ($fileStats as $file => $s) {
+        printf(
+            "%s,%d,%.1f,%.1f,%.1f,%.1f,%.1f\n",
+            basename($file),
+            $fileSizes[$file],
+            $s['min'], $s['avg'], $s['median'], $s['p95'], $s['max'],
+        );
+    }
+
+} else {
+    // Table output (default)
+    $nameLen = max(20, ...array_map(fn($f) => strlen(basename($f)), $files));
+    $col     = fn(int $w, string $v) => str_pad($v, $w);
+
+    $header = sprintf(
+        "%-{$nameLen}s  %8s  %10s  %10s  %10s  %10s\n",
+        'File', 'Bytes', 'Avg', 'Median', 'P95', 'Max',
+    );
+    $divider = str_repeat('-', strlen(rtrim($header))) . "\n";
+
+    echo $divider;
+    echo $header;
+    echo $divider;
+
+    foreach ($fileStats as $file => $s) {
+        printf(
+            "%-{$nameLen}s  %8d  %10s  %10s  %10s  %10s\n",
+            basename($file),
+            $fileSizes[$file],
+            formatUs($s['avg']),
+            formatUs($s['median']),
+            formatUs($s['p95']),
+            formatUs($s['max']),
+        );
+    }
+
+    echo $divider;
+
+    // Summary
+    $avgPassMs   = $passStats['avg'] / 1_000;
+    $medPassMs   = $passStats['median'] / 1_000;
+    $totalKb     = $totalBytes / 1024;
+    $filesPerSec = $fileCount / ($passStats['avg'] / 1_000_000);
+    $kbPerSec    = $totalKb   / ($passStats['avg'] / 1_000_000);
+
+    printf("\nSummary (%d files, %d iteration%s, %.1f KB total)\n",
+        $fileCount, $iterations, $iterations > 1 ? 's' : '', $totalKb);
+    printf("  Pass avg:    %s\n", formatUs($passStats['avg']));
+    printf("  Pass median: %s\n", formatUs($passStats['median']));
+    printf("  Pass p95:    %s\n", formatUs($passStats['p95']));
+    printf("  Pass min:    %s\n", formatUs($passStats['min']));
+    printf("  Pass max:    %s\n", formatUs($passStats['max']));
+    printf("  Throughput:  %.1f files/s  |  %.1f KB/s\n", $filesPerSec, $kbPerSec);
+}

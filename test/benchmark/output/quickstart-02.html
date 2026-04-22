@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="asciidoc-php 0.1.0">
-<title>AsciiDoc PHP Integration Guide</title>
+<title>Webware Framework: Quickstart Guide [Variant 2]</title>
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
 /* Uncomment the following line when using as a custom stylesheet */
@@ -433,159 +433,141 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
 </head>
-<body class="article toc2 toc-left">
-<div id="toc" class="toc2">
+<body class="article">
+<div id="header">
+<h1>Webware Framework: Quickstart Guide [Variant 2]</h1>
+<div class="details"><span class="author">Webware Team</span></div>
+<div class="details"><span class="revdate">2026-01-01</span></div>
+<div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_introduction">Introduction</a>
+<li><a href="#_prerequisites">Prerequisites</a></li>
+<li><a href="#_installation">Installation</a>
 <ul class="sectlevel2">
-<li><a href="#_sub_section">Sub-section</a></li>
+<li><a href="#_via_composer_recommended">Via Composer (Recommended)</a></li>
+<li><a href="#_manual_download">Manual Download</a></li>
 </ul>
 </li>
-<li><a href="#_lists">Lists</a>
+<li><a href="#_first_run_configuration">First-Run Configuration</a>
 <ul class="sectlevel2">
-<li><a href="#_unordered_list">Unordered List</a></li>
-<li><a href="#_ordered_list">Ordered List</a></li>
+<li><a href="#_environment_file">Environment File</a></li>
+<li><a href="#_database_migrations">Database Migrations</a></li>
 </ul>
 </li>
-<li><a href="#_source_code">Source Code</a></li>
-<li><a href="#_tables">Tables</a></li>
-<li><a href="#_admonitions">Admonitions</a></li>
-<li><a href="#_thematic_break">Thematic Break</a></li>
-<li><a href="#_end">End</a></li>
+<li><a href="#_your_first_route">Your First Route</a></li>
+<li><a href="#_your_first_controller">Your First Controller</a></li>
+<li><a href="#_running_the_application">Running the Application</a></li>
+<li><a href="#_what_s_next">What&#039;s Next?</a></li>
 </ul>
 </div>
-<div id="header">
-<h1>AsciiDoc PHP Integration Guide</h1>
-<div class="details"><span class="author">Author Name</span></div>
-<div class="details"><span class="revdate">2024-01-01</span></div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is the preamble paragraph.</p>
+<p>Variant <strong>2</strong>: this copy was produced by the benchmark corpus generator. It is used to measure throughput of the AsciiDoc-PHP converter pipeline.</p>
+</div>
+<div class="paragraph">
+<p>This guide walks you through installing Webware Framework, creating your first
+project, and running a basic application.</p>
 </div>
 </div>
 </div>
-<div class="sect1" id="_introduction">
-<h2>Introduction</h2>
+<div class="sect1" id="_prerequisites">
+<h2>Prerequisites</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section introduces the document.</p>
+<p>Before you begin, ensure your environment meets the following requirements:</p>
 </div>
-<div class="sect2" id="_sub_section">
-<h3>Sub-section</h3>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A nested section with <strong>bold</strong>, <em>italic</em>, and <code>monospaced</code> inline formatting.</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_lists">
-<h2>Lists</h2>
-<div class="sectionbody">
-<div class="sect2" id="_unordered_list">
-<h3>Unordered List</h3>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>Item one</p>
-</li>
-<li>
-<p>Item two</p>
-</li>
-<li>
-<p>Item three</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect2" id="_ordered_list">
-<h3>Ordered List</h3>
-<div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>First item</p>
-</li>
-<li>
-<p>Second item</p>
-</li>
-<li>
-<p>Third item</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_source_code">
-<h2>Source Code</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
-echo &quot;Hello, World!\n&quot;;</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1" id="_tables">
-<h2>Tables</h2>
-<div class="sectionbody">
 <table class="tableblock frame-all grid-all" style="width:100%">
 <colgroup>
-<col style="width: 16.67%;">
 <col style="width: 33.33%;">
-<col style="width: 50%;">
+<col style="width: 66.67%;">
 </colgroup>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Name</p>
+<p class="tableblock">Requirement</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Role</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Department</p>
+<p class="tableblock">Version</p>
 </td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Alice</p>
+<p class="tableblock">PHP</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Developer</p>
-</td>
-<td class="tableblock halign-left valign-top">
-<p class="tableblock">Engineering</p>
+<p class="tableblock">8.4 or higher</p>
 </td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Bob</p>
+<p class="tableblock">Composer</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Designer</p>
+<p class="tableblock">2.x</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">ext-json</p>
 </td>
 <td class="tableblock halign-left valign-top">
-<p class="tableblock">Creative</p>
+<p class="tableblock">Bundled with PHP</p>
+</td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">ext-mbstring</p>
+</td>
+<td class="tableblock halign-left valign-top">
+<p class="tableblock">Bundled with PHP</p>
 </td>
 </tr>
 </tbody>
 </table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+PHP versions below 8.4 are not supported and will not receive backports.</td>
+</tr>
+</table>
 </div>
 </div>
-<div class="sect1" id="_admonitions">
-<h2>Admonitions</h2>
+</div>
+<div class="sect1" id="_installation">
+<h2>Installation</h2>
 <div class="sectionbody">
+<div class="sect2" id="_via_composer_recommended">
+<h3>Via Composer (Recommended)</h3>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">composer create-project webware/framework my-project
+cd my-project</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_manual_download">
+<h3>Manual Download</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Download the latest release archive and extract it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">wget https://github.com/webware/framework/archive/refs/tags/v1.0.0.tar.gz
+tar -xzf v1.0.0.tar.gz
+cd framework-1.0.0
+composer install</code></pre>
+</div>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -593,9 +575,63 @@ echo &quot;Hello, World!\n&quot;;</code></pre>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-This is a note admonition.</td>
+Manual installation bypasses Composer&#039;s dependency verification.
+Always verify the archive checksum before extracting.</td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_first_run_configuration">
+<h2>First-Run Configuration</h2>
+<div class="sectionbody">
+<div class="sect2" id="_environment_file">
+<h3>Environment File</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Copy the example environment file and generate an application key:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">cp .env.example .env
+php bin/webware key:generate</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>.env</code> file controls all environment-specific settings:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ini hljs" data-lang="ini">APP_NAME=MyApp
+APP_ENV=local
+APP_DEBUG=true
+APP_KEY=base64:GENERATED_BY_COMMAND_ABOVE
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=myapp
+DB_USERNAME=root
+DB_PASSWORD=secret
+
+CACHE_DRIVER=file
+LOG_CHANNEL=daily</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2" id="_database_migrations">
+<h3>Database Migrations</h3>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Run the bundled migrations to create the application schema:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware migrate</code></pre>
+</div>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -604,32 +640,142 @@ This is a note admonition.</td>
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-This is a tip admonition.</td>
+Use <code>--seed</code> to populate demo data: <code>php bin/webware migrate --seed</code></td>
 </tr>
 </table>
 </div>
-<div class="admonitionblock warning">
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_your_first_route">
+<h2>Your First Route</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Open <code>config/routes.php</code> and add a route:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
+
+use Webware\Router\Router;
+
+$router = new Router();
+
+$router-&gt;get(&#039;/&#039;, static function ($req, $res) {
+    return $res-&gt;json([&#039;message&#039; =&gt; &#039;Hello, World!&#039;, &#039;status&#039; =&gt; &#039;ok&#039;]);
+});
+
+$router-&gt;get(&#039;/ping&#039;, static function ($req, $res) {
+    return $res-&gt;text(&#039;pong&#039;);
+});
+
+return $router;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_your_first_controller">
+<h2>Your First Controller</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Generate a controller scaffold:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware make:controller HomeController</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This creates <code>src/Controller/HomeController.php</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">&lt;?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use Webware\Http\Request;
+use Webware\Http\Response;
+
+final class HomeController
+{
+    public function index(Request $request, Response $response): Response
+    {
+        return $response-&gt;view(&#039;home/index&#039;, [
+            &#039;title&#039;   =&gt; &#039;Welcome to Webware&#039;,
+            &#039;version&#039; =&gt; &#039;1.0.0&#039;,
+        ]);
+    }
+
+    public function show(Request $request, Response $response, int $id): Response
+    {
+        return $response-&gt;json([&#039;id&#039; =&gt; $id]);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wire the controller into <code>config/routes.php</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-php hljs" data-lang="php">$router-&gt;get(&#039;/&#039;, [HomeController::class, &#039;index&#039;]);
+$router-&gt;get(&#039;/items/{id}&#039;, [HomeController::class, &#039;show&#039;]);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1" id="_running_the_application">
+<h2>Running the Application</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Start the built-in development server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash hljs" data-lang="bash">php bin/webware serve
+# or with a custom port:
+php bin/webware serve --port=9000</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Your application is now available at <code>http://localhost:8080</code>.</p>
+</div>
+<div class="admonitionblock tip">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
+<i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-This is a warning admonition.</td>
+Pass <code>--watch</code> to enable automatic reload on file changes.</td>
 </tr>
 </table>
 </div>
 </div>
 </div>
-<div class="sect1" id="_thematic_break">
-<h2>Thematic Break</h2>
+<div class="sect1" id="_what_s_next">
+<h2>What&#039;s Next?</h2>
 <div class="sectionbody">
-<hr>
+<div class="ulist">
+<ul>
+<li>
+<p>xref:authentication.adoc[Authentication] — Secure your application with JWT or session auth</p>
+</li>
+<li>
+<p>xref:routing.adoc[Routing] — Parameterized routes, groups, and middleware stacks</p>
+</li>
+<li>
+<p>xref:middleware.adoc[Middleware] — Request/response pipeline customisation</p>
+</li>
+<li>
+<p>xref:configuration-reference.adoc[Configuration Reference] — Every option documented</p>
+</li>
+</ul>
 </div>
-</div>
-<div class="sect1" id="_end">
-<h2>End</h2>
-<div class="sectionbody">
 </div>
 </div>
 </div>

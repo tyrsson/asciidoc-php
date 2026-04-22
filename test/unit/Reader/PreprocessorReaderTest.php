@@ -417,4 +417,119 @@ final class PreprocessorReaderTest extends TestCase
         // Both lines are directives — nothing content-wise to read
         $this->assertFalse($r->hasMoreLines());
     }
+
+    // ── YAML front matter (skip-front-matter) ─────────────────────────────────
+
+    public function testFrontMatterIsStrippedWhenAttributeSet(): void
+    {
+        $doc = new DocumentStub();
+        $doc->setAttribute('skip-front-matter', '');
+        $r = new PreprocessorReader(
+            $doc,
+            "---\nlayout: default\n---\n= Title\n\ncontent",
+            $this->cursor(),
+        );
+
+        $this->assertSame('= Title', $r->readLine());
+        $this->assertSame('', $r->readLine());
+        $this->assertSame('content', $r->readLine());
+    }
+
+    public function testFrontMatterStoredInDocumentAttribute(): void
+    {
+        $doc = new DocumentStub();
+        $doc->setAttribute('skip-front-matter', '');
+        new PreprocessorReader(
+            $doc,
+            "---\nlayout: default\ntitle: My Page\n---\ncontent",
+            $this->cursor(),
+        );
+
+        $this->assertSame("layout: default\ntitle: My Page", $doc->getAttribute('front-matter'));
+    }
+
+    public function testFrontMatterKeysPromotedAsDocumentAttributes(): void
+    {
+        $doc = new DocumentStub();
+        $doc->setAttribute('skip-front-matter', '');
+        new PreprocessorReader(
+            $doc,
+            "---\nlayout: default\nauthor: Alice\n---\ncontent",
+            $this->cursor(),
+        );
+
+        $this->assertSame('default', $doc->getAttribute('layout'));
+        $this->assertSame('Alice',   $doc->getAttribute('author'));
+    }
+
+    public function testFrontMatterQuotedStringsAreUnquoted(): void
+    {
+        $doc = new DocumentStub();
+        $doc->setAttribute('skip-front-matter', '');
+        new PreprocessorReader(
+            $doc,
+            "---\ntitle: \"My Document\"\nauthor: 'Bob'\n---\ncontent",
+            $this->cursor(),
+        );
+
+        $this->assertSame('My Document', $doc->getAttribute('title'));
+        $this->assertSame('Bob',         $doc->getAttribute('author'));
+    }
+
+    public function testFrontMatterDoesNotOverwriteExistingDocumentAttribute(): void
+    {
+        $doc = new DocumentStub();
+        $doc->setAttribute('skip-front-matter', '');
+        $doc->setAttribute('author', 'Pre-set Author');
+        new PreprocessorReader(
+            $doc,
+            "---\nauthor: Front Matter Author\n---\ncontent",
+            $this->cursor(),
+        );
+
+        $this->assertSame('Pre-set Author', $doc->getAttribute('author'));
+    }
+
+    public function testFrontMatterIgnoredWhenAttributeNotSet(): void
+    {
+        $doc = new DocumentStub();
+        $r   = new PreprocessorReader(
+            $doc,
+            "---\nlayout: default\n---\n= Title",
+            $this->cursor(),
+        );
+
+        // Without skip-front-matter the --- lines pass through as-is
+        $this->assertSame('---', $r->readLine());
+        $this->assertFalse($doc->hasAttribute('front-matter'));
+    }
+
+    public function testFrontMatterWithNoClosingDelimiterIsNotStripped(): void
+    {
+        $doc = new DocumentStub();
+        $doc->setAttribute('skip-front-matter', '');
+        $r = new PreprocessorReader(
+            $doc,
+            "---\nlayout: default\n= Title\n\ncontent",
+            $this->cursor(),
+        );
+
+        // Opening --- without closing --- must not strip anything
+        $this->assertSame('---', $r->readLine());
+        $this->assertFalse($doc->hasAttribute('front-matter'));
+    }
+
+    public function testFrontMatterEmptyBlockIsHandled(): void
+    {
+        $doc = new DocumentStub();
+        $doc->setAttribute('skip-front-matter', '');
+        $r = new PreprocessorReader(
+            $doc,
+            "---\n---\n= Title",
+            $this->cursor(),
+        );
+
+        $this->assertSame('', $doc->getAttribute('front-matter'));
+        $this->assertSame('= Title', $r->readLine());
+    }
 }

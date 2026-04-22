@@ -1,0 +1,442 @@
+= Webware Framework: Configuration Reference
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:source-highlighter: highlight.js
+:icons: font
+:description: Complete configuration reference for all Webware Framework config files.
+
+Webware configuration files live in the `config/` directory. Each file
+exports a PHP array. Environment-specific values are read via `env()`.
+
+== Application (`config/app.php`)
+
+[source,php]
+----
+<?php
+
+return [
+    'name'         => env('APP_NAME', 'Webware App'),
+    'env'          => env('APP_ENV', 'production'),
+    'debug'        => (bool) env('APP_DEBUG', false),
+    'url'          => env('APP_URL', 'http://localhost'),
+    'key'          => env('APP_KEY'),
+    'cipher'       => 'AES-256-CBC',
+    'timezone'     => env('APP_TIMEZONE', 'UTC'),
+    'locale'       => env('APP_LOCALE', 'en'),
+    'fallback_locale' => 'en',
+    'providers'    => [
+        // Kernel service providers ...
+    ],
+    'aliases'      => [],
+];
+----
+
+=== Configuration Keys
+
+[cols="2,1,1,4",options="header"]
+|===
+| Key                | Type    | Default          | Description
+| `name`             | string  | `'Webware App'`  | Application display name
+| `env`              | string  | `'production'`   | Environment name
+| `debug`            | bool    | `false`          | Enable verbose error pages
+| `url`              | string  | `'http://localhost'` | Canonical application URL
+| `key`              | string  | _required_       | 32-byte encryption key (base64)
+| `cipher`           | string  | `'AES-256-CBC'`  | Encryption cipher
+| `timezone`         | string  | `'UTC'`          | PHP default timezone
+| `locale`           | string  | `'en'`           | Default locale for translations
+| `fallback_locale`  | string  | `'en'`           | Locale when translation is missing
+|===
+
+WARNING: Never set `debug=true` in a production environment. It exposes
+stack traces, environment variables, and database queries to end users.
+
+== Database (`config/database.php`)
+
+[source,php]
+----
+<?php
+
+return [
+    'default' => env('DB_CONNECTION', 'mysql'),
+    'connections' => [
+        'mysql' => [
+            'driver'    => 'mysql',
+            'host'      => env('DB_HOST', '127.0.0.1'),
+            'port'      => (int) env('DB_PORT', 3306),
+            'database'  => env('DB_DATABASE', 'webware'),
+            'username'  => env('DB_USERNAME', 'root'),
+            'password'  => env('DB_PASSWORD', ''),
+            'charset'   => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix'    => env('DB_PREFIX', ''),
+            'strict'    => true,
+            'options'   => [
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_STRINGIFY_FETCHES=> false,
+            ],
+        ],
+        'pgsql' => [
+            'driver'   => 'pgsql',
+            'host'     => env('PG_HOST', '127.0.0.1'),
+            'port'     => (int) env('PG_PORT', 5432),
+            'database' => env('PG_DATABASE', 'webware'),
+            'username' => env('PG_USERNAME', 'postgres'),
+            'password' => env('PG_PASSWORD', ''),
+            'charset'  => 'utf8',
+            'schema'   => 'public',
+            'sslmode'  => env('PG_SSLMODE', 'prefer'),
+        ],
+        'sqlite' => [
+            'driver'   => 'sqlite',
+            'database' => env('DB_DATABASE', storage_path('database.sqlite')),
+        ],
+    ],
+    'migrations' => 'migrations',
+    'redis' => [
+        'client' => 'phpredis',
+        'default' => [
+            'host'     => env('REDIS_HOST', '127.0.0.1'),
+            'password' => env('REDIS_PASSWORD', null),
+            'port'     => (int) env('REDIS_PORT', 6379),
+            'database' => (int) env('REDIS_DB', 0),
+        ],
+        'cache' => [
+            'host'     => env('REDIS_HOST', '127.0.0.1'),
+            'port'     => (int) env('REDIS_PORT', 6379),
+            'database' => (int) env('REDIS_CACHE_DB', 1),
+        ],
+    ],
+];
+----
+
+=== MySQL Connection Keys
+
+[cols="2,1,2,4",options="header"]
+|===
+| Key          | Type    | Default          | Description
+| `driver`     | string  | `'mysql'`        | Database driver
+| `host`       | string  | `'127.0.0.1'`    | Database server hostname or IP
+| `port`       | integer | `3306`           | Database server port
+| `database`   | string  | `'webware'`      | Database name
+| `username`   | string  | `'root'`         | Database user
+| `password`   | string  | `''`             | Database password
+| `charset`    | string  | `'utf8mb4'`      | Connection character set
+| `collation`  | string  | `'utf8mb4_unicode_ci'` | Default collation
+| `prefix`     | string  | `''`             | Table name prefix
+| `strict`     | bool    | `true`           | Enable MySQL strict mode
+|===
+
+TIP: Always use `utf8mb4` and not `utf8` in MySQL. The `utf8` charset in
+MySQL is limited to 3-byte Unicode and silently truncates 4-byte characters
+(emoji, some CJK symbols).
+
+== Cache (`config/cache.php`)
+
+[source,php]
+----
+<?php
+
+return [
+    'default' => env('CACHE_DRIVER', 'file'),
+    'stores' => [
+        'array' => ['driver' => 'array'],
+        'file'  => [
+            'driver' => 'file',
+            'path'   => storage_path('cache/data'),
+        ],
+        'redis' => [
+            'driver'     => 'redis',
+            'connection' => 'cache',
+            'lock_connection' => 'default',
+        ],
+        'memcached' => [
+            'driver'   => 'memcached',
+            'servers'  => [
+                ['host' => env('MEMCACHED_HOST', '127.0.0.1'), 'port' => 11211, 'weight' => 100],
+            ],
+        ],
+        'dynamodb' => [
+            'driver'       => 'dynamodb',
+            'key'          => env('AWS_ACCESS_KEY_ID'),
+            'secret'       => env('AWS_SECRET_ACCESS_KEY'),
+            'region'       => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'table'        => env('DYNAMODB_CACHE_TABLE', 'cache'),
+            'endpoint'     => env('DYNAMODB_ENDPOINT'),
+        ],
+    ],
+    'prefix' => env('CACHE_PREFIX', 'webware_'),
+];
+----
+
+=== Cache Driver Comparison
+
+[cols="2,1,1,1,3",options="header"]
+|===
+| Driver      | Persistent | Distributed | Speed  | Use Case
+| `array`     | No         | No          | ★★★★★  | Testing, single-request caches
+| `file`      | Yes        | No          | ★★☆☆☆  | Single-server dev/staging
+| `redis`     | Yes        | Yes         | ★★★★★  | Production default
+| `memcached` | Yes        | Yes         | ★★★★☆  | High-throughput read caches
+| `dynamodb`  | Yes        | Yes         | ★★★☆☆  | Serverless / Lambda deployments
+|===
+
+== Session (`config/session.php`)
+
+[source,php]
+----
+<?php
+
+return [
+    'driver'          => env('SESSION_DRIVER', 'file'),
+    'lifetime'        => (int) env('SESSION_LIFETIME', 120),
+    'expire_on_close' => false,
+    'encrypt'         => (bool) env('SESSION_ENCRYPT', false),
+    'files'           => storage_path('sessions'),
+    'connection'      => env('SESSION_CONNECTION'),
+    'table'           => 'sessions',
+    'store'           => env('SESSION_STORE'),
+    'lottery'         => [2, 100],
+    'cookie'          => env('SESSION_COOKIE', 'webware_session'),
+    'path'            => '/',
+    'domain'          => env('SESSION_DOMAIN'),
+    'secure'          => (bool) env('SESSION_SECURE_COOKIE', false),
+    'http_only'       => true,
+    'same_site'       => env('SESSION_SAME_SITE', 'lax'),
+    'partitioned'     => false,
+];
+----
+
+=== Session Configuration Keys
+
+[cols="2,1,2,4",options="header"]
+|===
+| Key              | Type    | Default            | Description
+| `driver`         | string  | `'file'`           | Session storage driver
+| `lifetime`       | integer | `120`              | Session TTL in minutes
+| `expire_on_close`| bool    | `false`            | Destroy session when browser closes
+| `encrypt`        | bool    | `false`            | Encrypt session data at rest
+| `cookie`         | string  | `'webware_session'`| Session cookie name
+| `secure`         | bool    | `false`            | HTTPS-only cookie
+| `http_only`      | bool    | `true`             | Inaccessible to JavaScript
+| `same_site`      | string  | `'lax'`            | SameSite cookie policy
+|===
+
+IMPORTANT: Set `SESSION_SECURE_COOKIE=true` and `SESSION_SAME_SITE=strict`
+in production to mitigate CSRF and session hijacking risks.
+
+== Queue (`config/queue.php`)
+
+[source,php]
+----
+<?php
+
+return [
+    'default' => env('QUEUE_CONNECTION', 'sync'),
+    'connections' => [
+        'sync'     => ['driver' => 'sync'],
+        'database' => [
+            'driver'      => 'database',
+            'table'       => 'jobs',
+            'queue'       => 'default',
+            'retry_after' => 90,
+            'after_commit'=> false,
+        ],
+        'redis' => [
+            'driver'      => 'redis',
+            'connection'  => 'default',
+            'queue'       => env('REDIS_QUEUE', 'default'),
+            'retry_after' => 90,
+            'block_for'   => null,
+            'after_commit'=> false,
+        ],
+        'sqs' => [
+            'driver'  => 'sqs',
+            'key'     => env('AWS_ACCESS_KEY_ID'),
+            'secret'  => env('AWS_SECRET_ACCESS_KEY'),
+            'prefix'  => env('SQS_PREFIX', 'https://sqs.us-east-1.amazonaws.com/your-account-id'),
+            'queue'   => env('SQS_QUEUE', 'default'),
+            'suffix'  => env('SQS_SUFFIX'),
+            'region'  => env('AWS_DEFAULT_REGION', 'us-east-1'),
+        ],
+    ],
+    'failed' => [
+        'driver'   => 'database',
+        'database' => env('DB_CONNECTION', 'mysql'),
+        'table'    => 'failed_jobs',
+    ],
+];
+----
+
+=== Queue Driver Comparison
+
+[cols="2,1,1,3",options="header"]
+|===
+| Driver     | Persistent | Distributed | Best For
+| `sync`     | No         | No          | Development and testing only
+| `database` | Yes        | Yes         | Small-medium workloads, single DB
+| `redis`    | Yes        | Yes         | High-throughput, real-time jobs
+| `sqs`      | Yes        | Yes         | Serverless, AWS-native deployments
+|===
+
+== Logging (`config/logging.php`)
+
+[source,php]
+----
+<?php
+
+return [
+    'default' => env('LOG_CHANNEL', 'stack'),
+    'deprecations' => [
+        'channel' => env('LOG_DEPRECATIONS_CHANNEL', 'null'),
+        'trace'   => env('LOG_DEPRECATIONS_TRACE', false),
+    ],
+    'channels' => [
+        'stack' => [
+            'driver'            => 'stack',
+            'channels'          => ['single', 'slack'],
+            'ignore_exceptions' => false,
+        ],
+        'single' => [
+            'driver'     => 'single',
+            'path'       => storage_path('logs/webware.log'),
+            'level'      => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+        'daily' => [
+            'driver'     => 'daily',
+            'path'       => storage_path('logs/webware.log'),
+            'level'      => env('LOG_LEVEL', 'debug'),
+            'days'       => (int) env('LOG_DAILY_DAYS', 14),
+        ],
+        'slack' => [
+            'driver'   => 'slack',
+            'url'      => env('LOG_SLACK_WEBHOOK_URL'),
+            'username' => 'Webware Log',
+            'emoji'    => ':boom:',
+            'level'    => env('LOG_LEVEL', 'critical'),
+        ],
+        'stderr' => [
+            'driver'    => 'monolog',
+            'level'     => env('LOG_LEVEL', 'debug'),
+            'handler'   => StreamHandler::class,
+            'formatter' => JsonFormatter::class,
+            'with'      => ['stream' => 'php://stderr'],
+        ],
+        'null' => [
+            'driver'  => 'monolog',
+            'handler' => NullHandler::class,
+        ],
+    ],
+];
+----
+
+=== Log Levels
+
+Webware uses PSR-3 log levels:
+
+[cols="1,1,3",options="header"]
+|===
+| Level     | Severity | Description
+| `emergency`| 800     | System is unusable
+| `alert`    | 700     | Immediate action required
+| `critical` | 600     | Critical failure; component unavailable
+| `error`    | 500     | Runtime error that does not require immediate action
+| `warning`  | 400     | Exceptional occurrence; not an error
+| `notice`   | 300     | Normal but significant event
+| `info`     | 200     | Informational message
+| `debug`    | 100     | Detailed debug information
+|===
+
+== Mail (`config/mail.php`)
+
+[source,php]
+----
+<?php
+
+return [
+    'default'  => env('MAIL_MAILER', 'log'),
+    'mailers'  => [
+        'smtp' => [
+            'transport'  => 'smtp',
+            'host'       => env('MAIL_HOST', 'mailpit'),
+            'port'       => (int) env('MAIL_PORT', 587),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'username'   => env('MAIL_USERNAME'),
+            'password'   => env('MAIL_PASSWORD'),
+            'timeout'    => null,
+        ],
+        'ses'  => ['transport' => 'ses'],
+        'postmark' => ['transport' => 'postmark'],
+        'log'  => ['transport' => 'log', 'channel' => env('MAIL_LOG_CHANNEL')],
+        'array'=> ['transport' => 'array'],
+    ],
+    'from' => [
+        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'name'    => env('MAIL_FROM_NAME', env('APP_NAME', 'Webware')),
+    ],
+];
+----
+
+== Full `.env` Reference
+
+[source,ini]
+----
+# Application
+APP_NAME="Webware App"
+APP_ENV=production
+APP_DEBUG=false
+APP_KEY=base64:YOUR_KEY_HERE
+APP_URL=https://example.com
+APP_TIMEZONE=UTC
+APP_LOCALE=en
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=webware
+DB_USERNAME=webware
+DB_PASSWORD=secret
+DB_PREFIX=
+
+# Cache
+CACHE_DRIVER=redis
+CACHE_PREFIX=webware_
+
+# Session
+SESSION_DRIVER=redis
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=true
+SESSION_SECURE_COOKIE=true
+SESSION_SAME_SITE=strict
+
+# Queue
+QUEUE_CONNECTION=redis
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_CACHE_DB=1
+REDIS_QUEUE=default
+
+# Mail
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_ENCRYPTION=tls
+MAIL_USERNAME=mailer@example.com
+MAIL_PASSWORD=secret
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME="${APP_NAME}"
+
+# JWT
+JWT_SECRET=base64:YOUR_JWT_SECRET_HERE
+
+# Logging
+LOG_CHANNEL=stack
+LOG_LEVEL=error
+LOG_SLACK_WEBHOOK_URL=
+----

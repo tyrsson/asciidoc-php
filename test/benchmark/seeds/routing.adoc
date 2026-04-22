@@ -1,0 +1,362 @@
+= Webware Framework: Routing Guide
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:source-highlighter: highlight.js
+:icons: font
+:description: Complete routing reference for Webware Framework including parameters, groups, and constraints.
+
+The Webware router maps incoming HTTP requests to controller actions or
+closures. It supports named routes, route groups, parameter constraints,
+middleware stacks, and sub-domain routing.
+
+== Basic Routes
+
+=== HTTP Verbs
+
+[source,php]
+----
+<?php
+
+use Webware\Router\Router;
+
+$router = new Router();
+
+$router->get(    '/users',       [UserController::class, 'index']);
+$router->post(   '/users',       [UserController::class, 'store']);
+$router->get(    '/users/{id}',  [UserController::class, 'show']);
+$router->put(    '/users/{id}',  [UserController::class, 'update']);
+$router->patch(  '/users/{id}',  [UserController::class, 'patch']);
+$router->delete( '/users/{id}',  [UserController::class, 'destroy']);
+$router->options('/users',       [UserController::class, 'options']);
+----
+
+=== Multiple Verbs on One Route
+
+[source,php]
+----
+$router->match(['GET', 'POST'], '/login', [AuthController::class, 'login']);
+$router->any('/webhook',        [WebhookController::class, 'handle']);
+----
+
+== Route Parameters
+
+=== Required Parameters
+
+Parameters are denoted by curly braces:
+
+[source,php]
+----
+$router->get('/posts/{slug}',       [PostController::class, 'show']);
+$router->get('/users/{id}/posts',   [PostController::class, 'byUser']);
+$router->get('/categories/{cat}/products/{sku}', [ProductController::class, 'show']);
+----
+
+The parameter is injected by name into the controller method:
+
+[source,php]
+----
+public function show(Request $request, Response $response, string $slug): Response
+{
+    $post = Post::findBySlug($slug);
+    return $response->json($post);
+}
+----
+
+=== Optional Parameters
+
+Append `?` to make a parameter optional:
+
+[source,php]
+----
+$router->get('/archive/{year?}/{month?}', [ArchiveController::class, 'index']);
+----
+
+Optional parameters default to `null`:
+
+[source,php]
+----
+public function index(Request $request, Response $response, ?int $year = null, ?int $month = null): Response
+{
+    return $response->json(Archive::filter($year, $month));
+}
+----
+
+=== Parameter Constraints
+
+Constrain parameter values with regular expressions:
+
+[source,php]
+----
+$router->get('/users/{id}',   [UserController::class, 'show'])->where('id', '\d+');
+$router->get('/posts/{slug}', [PostController::class, 'show'])->where('slug', '[a-z0-9-]+');
+$router->get('/files/{path}', [FileController::class, 'get']) ->where('path', '.+');
+----
+
+Multiple constraints:
+
+[source,php]
+----
+$router->get('/archive/{year}/{month}', [ArchiveController::class, 'index'])
+       ->where(['year' => '\d{4}', 'month' => '(0[1-9]|1[0-2])']);
+----
+
+=== Global Constraint Patterns
+
+Register reusable patterns in `config/routes.php`:
+
+[source,php]
+----
+$router->pattern('id',   '\d+');
+$router->pattern('slug', '[a-z0-9-]+');
+$router->pattern('uuid', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}');
+----
+
+== Named Routes
+
+=== Naming a Route
+
+[source,php]
+----
+$router->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+$router->get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+----
+
+=== Generating URLs
+
+[source,php]
+----
+// No parameters
+$url = route('dashboard');                     // /dashboard
+
+// With parameters
+$url = route('users.show', ['id' => 42]);      // /users/42
+
+// Absolute URL
+$url = route('dashboard', [], absolute: true); // https://example.com/dashboard
+----
+
+In templates:
+
+[source,html]
+----
+<a href="{{ route('users.show', ['id' => $user->id]) }}">View Profile</a>
+----
+
+== Route Groups
+
+=== Prefix
+
+[source,php]
+----
+$router->group('/api/v1', static function (Router $r) {
+    $r->get('/users',          [UserController::class, 'index']);
+    $r->post('/users',         [UserController::class, 'store']);
+    $r->get('/users/{id}',     [UserController::class, 'show']);
+    $r->put('/users/{id}',     [UserController::class, 'update']);
+    $r->delete('/users/{id}',  [UserController::class, 'destroy']);
+    $r->get('/posts',          [PostController::class, 'index']);
+    $r->post('/posts',         [PostController::class, 'store']);
+    $r->get('/posts/{id}',     [PostController::class, 'show']);
+});
+----
+
+=== Middleware
+
+Apply middleware to all routes in a group:
+
+[source,php]
+----
+$router->group('/admin', static function (Router $r) {
+    $r->get('/dashboard',       [AdminController::class, 'dashboard']);
+    $r->get('/users',           [AdminController::class, 'users']);
+    $r->post('/users/{id}/ban', [AdminController::class, 'banUser']);
+    $r->get('/settings',        [AdminController::class, 'settings']);
+    $r->post('/settings',       [AdminController::class, 'saveSettings']);
+}, middleware: [AuthMiddleware::class, AdminRoleMiddleware::class, AuditLogMiddleware::class]);
+----
+
+=== Namespace
+
+[source,php]
+----
+$router->group('/api/v2', static function (Router $r) {
+    $r->get('/users',    [UserController::class, 'index']);
+    $r->get('/products', [ProductController::class, 'index']);
+}, namespace: 'App\\Controller\\V2');
+----
+
+=== Nested Groups
+
+[source,php]
+----
+$router->group('/api', static function (Router $api) {
+    $api->group('/v1', static function (Router $v1) {
+        $v1->get('/users', [V1\UserController::class, 'index']);
+    });
+    $api->group('/v2', static function (Router $v2) {
+        $v2->get('/users', [V2\UserController::class, 'index']);
+    }, middleware: [ThrottleMiddleware::class]);
+}, middleware: [JsonHeaderMiddleware::class]);
+----
+
+== Resource Routes
+
+=== Automatic Resource Controller
+
+Generate all seven RESTful routes with a single call:
+
+[source,php]
+----
+$router->resource('/posts', PostController::class);
+----
+
+This registers:
+
+[cols="1,1,2,2",options="header"]
+|===
+| Method | URI               | Action  | Route Name
+| GET    | `/posts`          | index   | `posts.index`
+| GET    | `/posts/create`   | create  | `posts.create`
+| POST   | `/posts`          | store   | `posts.store`
+| GET    | `/posts/{id}`     | show    | `posts.show`
+| GET    | `/posts/{id}/edit`| edit    | `posts.edit`
+| PUT    | `/posts/{id}`     | update  | `posts.update`
+| DELETE | `/posts/{id}`     | destroy | `posts.destroy`
+|===
+
+=== Partial Resource Routes
+
+[source,php]
+----
+// Only these actions
+$router->resource('/photos', PhotoController::class, only: ['index', 'show']);
+
+// All except these
+$router->resource('/comments', CommentController::class, except: ['create', 'edit']);
+
+// API resource (no create/edit HTML form routes)
+$router->apiResource('/products', ProductController::class);
+----
+
+=== Nested Resources
+
+[source,php]
+----
+$router->resource('/posts/{post}/comments', CommentController::class);
+// Generates: /posts/{post}/comments/{comment}
+----
+
+== Middleware
+
+=== Attaching Middleware
+
+[source,php]
+----
+// Single middleware
+$router->get('/secure', [SecureController::class, 'index'])
+       ->middleware(AuthMiddleware::class);
+
+// Multiple middleware (applied in order)
+$router->post('/transfer', [TransferController::class, 'execute'])
+       ->middleware([AuthMiddleware::class, TwoFactorMiddleware::class, RateLimitMiddleware::class]);
+----
+
+=== Middleware Parameters
+
+[source,php]
+----
+$router->get('/admin', [AdminController::class, 'index'])
+       ->middleware(RoleMiddleware::class . ':admin,super-admin');
+----
+
+In the middleware class:
+
+[source,php]
+----
+final class RoleMiddleware implements MiddlewareInterface
+{
+    public function process(Request $request, Handler $handler, string ...$roles): Response
+    {
+        if (! $request->user()?->hasAnyRole($roles)) {
+            return new Response(403, ['error' => 'Insufficient role']);
+        }
+        return $handler->handle($request);
+    }
+}
+----
+
+=== Global Middleware
+
+Register middleware that runs on every request in `config/middleware.php`:
+
+[source,php]
+----
+return [
+    'global' => [
+        TrimStringsMiddleware::class,
+        ConvertEmptyStringsMiddleware::class,
+        JsonBodyParserMiddleware::class,
+        SecurityHeadersMiddleware::class,
+        CorsMiddleware::class,
+    ],
+    'named' => [
+        'auth'       => AuthMiddleware::class,
+        'guest'      => GuestMiddleware::class,
+        'throttle'   => ThrottleMiddleware::class,
+        'signed'     => SignedRouteMiddleware::class,
+    ],
+];
+----
+
+== Route Caching
+
+Cache compiled routes for faster production startup:
+
+[source,bash]
+----
+php bin/webware route:cache
+php bin/webware route:clear
+php bin/webware route:list        # list all registered routes
+----
+
+WARNING: Route caching uses serialised closures. If your routes use closures
+rather than `[Controller::class, 'method']` notation, use
+`webware/opis-closure` to make them serialisable, or switch to controller notation.
+
+[source,php]
+----
+// Not cacheable
+$router->get('/ping', fn($req, $res) => $res->text('pong'));
+
+// Cacheable
+$router->get('/ping', [PingController::class, 'index']);
+----
+
+== Debugging
+
+=== List Routes
+
+[source,bash]
+----
+php bin/webware route:list
+php bin/webware route:list --filter=api
+php bin/webware route:list --method=POST
+----
+
+Example output:
+
+----
++---------+---------------------------+-----------------------------------+
+| Method  | URI                       | Action                            |
++---------+---------------------------+-----------------------------------+
+| GET     | /                         | HomeController@index              |
+| GET     | /api/v1/users             | UserController@index              |
+| POST    | /api/v1/users             | UserController@store              |
+| GET     | /api/v1/users/{id}        | UserController@show               |
+| PUT     | /api/v1/users/{id}        | UserController@update             |
+| DELETE  | /api/v1/users/{id}        | UserController@destroy            |
++---------+---------------------------+-----------------------------------+
+----
+
+TIP: Use `route:list --json` to pipe output into other tools.

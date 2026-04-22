@@ -1,0 +1,391 @@
+= Webware Framework: REST API Reference
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:source-highlighter: highlight.js
+:icons: font
+:description: Complete REST API reference for the Webware Framework management API.
+
+All API endpoints follow REST conventions. Requests and responses use JSON.
+Authentication uses Bearer tokens (see xref:authentication.adoc[Authentication]).
+
+== Base URL
+
+----
+https://api.example.com/api/v1
+----
+
+All paths in this document are relative to the base URL.
+
+== Authentication
+
+Include the Bearer token in all requests:
+
+[source,http]
+----
+GET /api/v1/users HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Accept: application/json
+----
+
+== Response Format
+
+=== Success
+
+[source,json]
+----
+{
+    "data": { ... },
+    "meta": {
+        "request_id": "req_abc123",
+        "timestamp":  "2026-01-01T00:00:00Z"
+    }
+}
+----
+
+=== Paginated List
+
+[source,json]
+----
+{
+    "data": [ ... ],
+    "meta": {
+        "current_page": 1,
+        "last_page":    10,
+        "per_page":     20,
+        "total":        198,
+        "from":         1,
+        "to":           20
+    },
+    "links": {
+        "self":  "https://api.example.com/api/v1/users?page=1",
+        "first": "https://api.example.com/api/v1/users?page=1",
+        "last":  "https://api.example.com/api/v1/users?page=10",
+        "next":  "https://api.example.com/api/v1/users?page=2",
+        "prev":  null
+    }
+}
+----
+
+=== Error
+
+[source,json]
+----
+{
+    "error": {
+        "code":    "VALIDATION_FAILED",
+        "message": "The given data was invalid.",
+        "details": {
+            "email":    ["The email field is required."],
+            "password": ["The password must be at least 8 characters."]
+        }
+    },
+    "meta": {
+        "request_id": "req_def456"
+    }
+}
+----
+
+== Status Codes
+
+[cols="1,2,3",options="header"]
+|===
+| Code | Name                  | When Used
+| 200  | OK                    | Successful GET, PUT, PATCH
+| 201  | Created               | Successful POST that created a resource
+| 204  | No Content            | Successful DELETE
+| 400  | Bad Request           | Malformed request body or query string
+| 401  | Unauthorized          | Missing or invalid authentication token
+| 403  | Forbidden             | Authenticated but lacks permission
+| 404  | Not Found             | Resource does not exist
+| 409  | Conflict              | Duplicate resource or state conflict
+| 422  | Unprocessable Entity  | Validation errors
+| 429  | Too Many Requests     | Rate limit exceeded
+| 500  | Internal Server Error | Unexpected server-side error
+| 503  | Service Unavailable   | Application in maintenance mode
+|===
+
+== Users
+
+=== List Users
+
+`GET /users`
+
+[cols="2,1,4",options="header"]
+|===
+| Parameter  | Type    | Description
+| `page`     | integer | Page number (default: 1)
+| `per_page` | integer | Results per page (default: 20, max: 100)
+| `sort`     | string  | Field to sort by: `id`, `name`, `email`, `created_at`
+| `order`    | string  | Sort direction: `asc` (default) or `desc`
+| `filter`   | string  | Filter by name or email (partial match)
+| `role`     | string  | Filter by role: `admin`, `editor`, `viewer`
+| `active`   | boolean | Filter by active status
+|===
+
+Example response:
+
+[source,json]
+----
+{
+    "data": [
+        {
+            "id":         1,
+            "name":       "Alice Johnson",
+            "email":      "alice@example.com",
+            "role":       "admin",
+            "active":     true,
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-15T10:30:00Z"
+        },
+        {
+            "id":         2,
+            "name":       "Bob Smith",
+            "email":      "bob@example.com",
+            "role":       "editor",
+            "active":     true,
+            "created_at": "2026-01-02T09:00:00Z",
+            "updated_at": "2026-01-16T14:00:00Z"
+        }
+    ],
+    "meta": { "current_page": 1, "last_page": 5, "per_page": 20, "total": 98 }
+}
+----
+
+=== Get User
+
+`GET /users/{id}`
+
+[source,json]
+----
+{
+    "data": {
+        "id":           1,
+        "name":         "Alice Johnson",
+        "email":        "alice@example.com",
+        "role":         "admin",
+        "active":       true,
+        "permissions":  ["users.*", "posts.*", "settings.*"],
+        "last_login_at":"2026-01-22T08:00:00Z",
+        "created_at":   "2026-01-01T00:00:00Z",
+        "updated_at":   "2026-01-15T10:30:00Z"
+    }
+}
+----
+
+=== Create User
+
+`POST /users`
+
+[cols="2,1,1,4",options="header"]
+|===
+| Field      | Type    | Required | Description
+| `name`     | string  | Yes      | Full name (max 255 chars)
+| `email`    | string  | Yes      | Unique email address
+| `password` | string  | Yes      | Min 8 chars, must include number
+| `role`     | string  | No       | Default: `viewer`
+| `active`   | boolean | No       | Default: `true`
+|===
+
+[source,http]
+----
+POST /api/v1/users HTTP/1.1
+Content-Type: application/json
+
+{
+    "name":     "Carol White",
+    "email":    "carol@example.com",
+    "password": "SecurePass123!",
+    "role":     "editor"
+}
+----
+
+Returns `201 Created` with the created user.
+
+=== Update User
+
+`PUT /users/{id}`
+
+Accepts the same fields as Create User. All fields are optional in a PUT
+(unset fields are left unchanged).
+
+=== Delete User
+
+`DELETE /users/{id}`
+
+Returns `204 No Content` on success.
+
+WARNING: Deleting a user is irreversible. All user data including audit logs
+and assigned resources will be permanently removed.
+
+== Posts
+
+=== List Posts
+
+`GET /posts`
+
+[cols="2,1,4",options="header"]
+|===
+| Parameter    | Type    | Description
+| `page`       | integer | Page number
+| `per_page`   | integer | Results per page (max 50)
+| `status`     | string  | `draft`, `published`, `archived`
+| `author_id`  | integer | Filter by author ID
+| `tag`        | string  | Filter by tag slug
+| `search`     | string  | Full-text search in title and body
+| `from`       | date    | Published on or after this date (ISO 8601)
+| `to`         | date    | Published on or before this date (ISO 8601)
+|===
+
+=== Create Post
+
+`POST /posts`
+
+[cols="2,1,1,4",options="header"]
+|===
+| Field        | Type     | Required | Description
+| `title`      | string   | Yes      | Post title (max 255 chars)
+| `slug`       | string   | No       | Auto-generated from title if omitted
+| `body`       | string   | Yes      | Post body in Markdown or HTML
+| `status`     | string   | No       | `draft` (default) or `published`
+| `author_id`  | integer  | No       | Defaults to authenticated user
+| `tags`       | string[] | No       | Array of tag slugs
+| `published_at`| datetime| No       | Schedule publication; null = immediate
+| `meta_title` | string   | No       | SEO title override
+| `meta_desc`  | string   | No       | SEO description (max 160 chars)
+|===
+
+== Tags
+
+=== List Tags
+
+`GET /tags`
+
+=== Create Tag
+
+`POST /tags`
+
+[cols="2,1,1,4",options="header"]
+|===
+| Field         | Type   | Required | Description
+| `name`        | string | Yes      | Display name
+| `slug`        | string | No       | URL-safe identifier; auto-generated
+| `description` | string | No       | Short description
+| `color`       | string | No       | Hex colour code (e.g. `#3498db`)
+|===
+
+== Settings
+
+=== Get Settings
+
+`GET /settings`
+
+Returns all application settings the authenticated user has permission to read.
+
+=== Update Settings
+
+`PATCH /settings`
+
+[source,json]
+----
+{
+    "app_name":          "My Application",
+    "app_url":           "https://myapp.example.com",
+    "mail_from_address": "noreply@myapp.example.com",
+    "mail_from_name":    "My Application",
+    "timezone":          "America/New_York",
+    "locale":            "en_US",
+    "items_per_page":    25,
+    "allow_registration":true
+}
+----
+
+IMPORTANT: Changing `app_url` may invalidate existing signed URLs and OAuth
+redirect URIs. Update these in your OAuth provider settings as well.
+
+== Webhooks
+
+=== List Webhooks
+
+`GET /webhooks`
+
+=== Create Webhook
+
+`POST /webhooks`
+
+[cols="2,1,1,4",options="header"]
+|===
+| Field    | Type     | Required | Description
+| `url`    | string   | Yes      | HTTPS endpoint URL
+| `events` | string[] | Yes      | Events to subscribe to
+| `secret` | string   | No       | HMAC signing secret
+| `active` | boolean  | No       | Default: `true`
+|===
+
+Supported events:
+
+[cols="2,3",options="header"]
+|===
+| Event                | Triggered When
+| `user.created`       | A new user account is created
+| `user.updated`       | A user account is updated
+| `user.deleted`       | A user account is deleted
+| `post.published`     | A post status changes to `published`
+| `post.unpublished`   | A post is moved back to `draft` or `archived`
+| `post.deleted`       | A post is permanently deleted
+| `settings.updated`   | Application settings are changed
+| `webhook.failed`     | A webhook delivery attempt failed
+|===
+
+=== Webhook Payload
+
+[source,json]
+----
+{
+    "id":         "evt_abc123",
+    "event":      "user.created",
+    "created_at": "2026-01-22T10:00:00Z",
+    "data": {
+        "id":    42,
+        "name":  "New User",
+        "email": "newuser@example.com"
+    }
+}
+----
+
+Verify the HMAC signature:
+
+[source,php]
+----
+$signature = $request->header('X-Webware-Signature');
+$payload   = $request->rawBody();
+$expected  = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+
+if (! hash_equals($expected, $signature)) {
+    return new Response(401);
+}
+----
+
+== Rate Limiting
+
+[cols="2,1,1,2",options="header"]
+|===
+| Endpoint Pattern    | Limit        | Window  | Notes
+| All endpoints       | 1000 req     | 1 min   | Per API key
+| `POST /auth/login`  | 10 req       | 1 min   | Per IP address
+| `POST /auth/refresh`| 30 req       | 1 min   | Per token
+| `POST /users`       | 20 req       | 1 min   | Per API key
+| Webhook deliveries  | 5 retries    | 24 h    | Per webhook endpoint
+|===
+
+Exceeded limits return `429 Too Many Requests` with:
+
+[source,http]
+----
+HTTP/1.1 429 Too Many Requests
+Retry-After: 42
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1737547200
+----

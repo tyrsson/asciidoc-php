@@ -116,7 +116,8 @@ trait SubstitutorsTrait
 
     protected function subSpecialChars(string $text): string
     {
-        return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
+        // Asciidoctor uses ENT_COMPAT — escapes &, <, > and " but NOT single quotes.
+        return htmlspecialchars($text, ENT_COMPAT | ENT_SUBSTITUTE, 'UTF-8', false);
     }
 
     protected function subQuotes(string $text): string

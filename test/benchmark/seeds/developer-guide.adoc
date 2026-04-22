@@ -1,0 +1,704 @@
+= Webware Framework: Developer Guide
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:numbered:
+:source-highlighter: highlight.js
+:icons: font
+:description: Comprehensive developer guide for extending, testing, and deploying the Webware Framework.
+
+This guide covers the internal architecture of Webware, its extension points,
+the service container, the event system, and best practices for building
+production-ready applications.
+
+== Architecture Overview
+
+Webware follows the _Ports and Adapters_ (Hexagonal Architecture) pattern.
+Business logic lives in the domain layer and has no knowledge of HTTP, databases,
+or any infrastructure concern.
+
+----
+┌───────────────────────────────────────────────┐
+│                   Adapters                    │
+│  HTTP Controllers  │  Console Commands        │
+│  Queue Workers     │  Scheduled Tasks         │
+├───────────────────────────────────────────────┤
+│                Application Layer              │
+│  Use Cases / Application Services / Commands │
+├───────────────────────────────────────────────┤
+│                  Domain Layer                 │
+│  Entities  │  Value Objects  │  Domain Events │
+│  Repositories (interfaces)                   │
+├───────────────────────────────────────────────┤
+│               Infrastructure Layer            │
+│  Eloquent Repositories  │  Cache Adapters     │
+│  Mail Adapters          │  Queue Adapters     │
+└───────────────────────────────────────────────┘
+----
+
+=== Request Lifecycle
+
+1. PHP entry point: `public/index.php` bootstraps the kernel.
+2. The kernel creates the service container and loads providers.
+3. The router matches the URI and resolves middleware + handler.
+4. The middleware pipeline runs from outermost to innermost.
+5. The handler (controller) executes domain logic and returns a response.
+6. The middleware pipeline unwinds (response flows back outward).
+7. The kernel sends the response.
+
+== Service Container
+
+The service container resolves dependencies using constructor injection.
+It supports auto-wiring: if all constructor arguments can be resolved,
+you don't need to register the class manually.
+
+=== Binding Services
+
+[source,php]
+----
+use Webware\Container\Container;
+
+$container = Container::getInstance();
+
+// Bind an interface to a concrete class
+$container->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
+
+// Bind a singleton (resolved once, reused)
+$container->singleton(CacheInterface::class, static function (Container $c) {
+    return new RedisCache($c->make(Redis::class));
+});
+
+// Bind a factory (new instance each call)
+$container->factory(MailerInterface::class, SmtpMailer::class);
+----
+
+=== Service Providers
+
+Group related bindings and bootstrapping in a provider:
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers;
+
+use Webware\Container\Container;
+use Webware\Foundation\ServiceProvider;
+
+final class PaymentServiceProvider extends ServiceProvider
+{
+    /**
+     * Register bindings into the container.
+     */
+    public function register(Container $container): void
+    {
+        $container->singleton(PaymentGatewayInterface::class, static function (Container $c) {
+            $config = $c->make(Config::class);
+            return match ($config->get('payment.driver')) {
+                'stripe' => new StripeGateway($config->get('payment.stripe_key')),
+                'paypal' => new PayPalGateway($config->get('payment.paypal_client_id')),
+                default  => throw new \InvalidArgumentException('Unknown payment driver'),
+            };
+        });
+    }
+
+    /**
+     * Bootstrap any post-registration logic.
+     */
+    public function boot(Container $container): void
+    {
+        // Subscribe to events, run migrations, etc.
+    }
+}
+----
+
+=== Contextual Binding
+
+Resolve a different implementation depending on the consumer:
+
+[source,php]
+----
+$container
+    ->when(OrderController::class)
+    ->needs(LoggerInterface::class)
+    ->give(fn() => new ChannelLogger('orders'));
+
+$container
+    ->when(PaymentController::class)
+    ->needs(LoggerInterface::class)
+    ->give(fn() => new ChannelLogger('payments'));
+----
+
+=== Tagging
+
+Tag multiple bindings for batch resolution:
+
+[source,php]
+----
+$container->tag([MysqlRepository::class, RedisRepository::class], 'repositories');
+
+$repositories = $container->tagged('repositories');
+foreach ($repositories as $repo) {
+    $repo->warmUp();
+}
+----
+
+== Event System
+
+Webware's event system decouples application components using the
+publish-subscribe pattern.
+
+=== Defining Events
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Events;
+
+final readonly class UserRegistered
+{
+    public function __construct(
+        public readonly int    $userId,
+        public readonly string $email,
+        public readonly string $name,
+    ) {}
+}
+----
+
+=== Listeners
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Listeners;
+
+use App\Events\UserRegistered;
+use Webware\Events\ListenerInterface;
+
+final class SendWelcomeEmail implements ListenerInterface
+{
+    public function __construct(private readonly MailerInterface $mailer) {}
+
+    public function handle(UserRegistered $event): void
+    {
+        $this->mailer->send(
+            to:      $event->email,
+            subject: 'Welcome to Webware!',
+            view:    'emails.welcome',
+            data:    ['name' => $event->name],
+        );
+    }
+}
+----
+
+=== Registering Listeners
+
+[source,php]
+----
+// In EventServiceProvider:
+protected array $listen = [
+    UserRegistered::class => [
+        SendWelcomeEmail::class,
+        CreateUserProfile::class,
+        NotifyAdmins::class,
+    ],
+    UserPasswordChanged::class => [
+        SendPasswordChangedNotification::class,
+        InvalidateAllSessions::class,
+    ],
+    OrderPlaced::class => [
+        SendOrderConfirmation::class,
+        ReserveInventory::class,
+        ChargePaymentMethod::class,
+        DispatchFulfillment::class,
+    ],
+];
+----
+
+=== Dispatching Events
+
+[source,php]
+----
+use Webware\Events\EventDispatcher;
+
+// Dispatch synchronously
+$dispatcher->dispatch(new UserRegistered(
+    userId: $user->id,
+    email:  $user->email,
+    name:   $user->name,
+));
+
+// Dispatch and forget (async via queue)
+$dispatcher->dispatch(new UserRegistered(...), async: true);
+----
+
+=== Wildcard Listeners
+
+Subscribe to all events matching a pattern:
+
+[source,php]
+----
+$dispatcher->listen('App\\Events\\*', static function (string $eventName, array $payload) {
+    AuditLog::record($eventName, $payload);
+});
+----
+
+NOTE: Wildcard listeners receive the event class name as the first argument
+and an array of event constructor parameters as the second.
+
+== Repository Pattern
+
+The repository pattern abstracts data access behind an interface. Domain
+code depends only on the interface; infrastructure provides the concrete
+implementation.
+
+=== Interface
+
+[source,php]
+----
+<?php
+
+namespace App\Domain\Repositories;
+
+use App\Domain\Entities\User;
+
+interface UserRepositoryInterface
+{
+    public function findById(int $id): ?User;
+    public function findByEmail(string $email): ?User;
+
+    /** @return User[] */
+    public function findAll(int $page, int $perPage): array;
+    public function count(): int;
+    public function save(User $user): void;
+    public function delete(int $id): void;
+}
+----
+
+=== Implementation
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Infrastructure\Repositories;
+
+use App\Domain\Entities\User;
+use App\Domain\Repositories\UserRepositoryInterface;
+use Webware\Database\QueryBuilder;
+
+final class DbUserRepository implements UserRepositoryInterface
+{
+    public function __construct(private readonly QueryBuilder $db) {}
+
+    public function findById(int $id): ?User
+    {
+        $row = $this->db->table('users')->find($id);
+        return $row ? User::fromArray($row) : null;
+    }
+
+    public function findByEmail(string $email): ?User
+    {
+        $row = $this->db->table('users')->where('email', $email)->first();
+        return $row ? User::fromArray($row) : null;
+    }
+
+    public function findAll(int $page, int $perPage): array
+    {
+        return $this->db
+            ->table('users')
+            ->orderBy('created_at', 'desc')
+            ->paginate($page, $perPage)
+            ->map(fn(array $r) => User::fromArray($r))
+            ->toArray();
+    }
+
+    public function count(): int
+    {
+        return $this->db->table('users')->count();
+    }
+
+    public function save(User $user): void
+    {
+        $this->db->table('users')->upsert($user->toArray(), ['id']);
+    }
+
+    public function delete(int $id): void
+    {
+        $this->db->table('users')->where('id', $id)->delete();
+    }
+}
+----
+
+== Command Bus
+
+Use the command bus pattern to handle application commands:
+
+=== Defining a Command
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Commands;
+
+final readonly class CreateUserCommand
+{
+    public function __construct(
+        public readonly string $name,
+        public readonly string $email,
+        public readonly string $password,
+        public readonly string $role = 'viewer',
+    ) {}
+}
+----
+
+=== Command Handler
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Handlers;
+
+use App\Commands\CreateUserCommand;
+use App\Domain\Entities\User;
+use App\Domain\Repositories\UserRepositoryInterface;
+use Webware\Bus\HandlerInterface;
+
+final class CreateUserHandler implements HandlerInterface
+{
+    public function __construct(
+        private readonly UserRepositoryInterface $users,
+        private readonly EventDispatcher         $events,
+        private readonly Hasher                  $hasher,
+    ) {}
+
+    public function handle(CreateUserCommand $command): User
+    {
+        if ($this->users->findByEmail($command->email) !== null) {
+            throw new DuplicateEmailException($command->email);
+        }
+
+        $user = new User(
+            name:     $command->name,
+            email:    $command->email,
+            password: $this->hasher->hash($command->password),
+            role:     $command->role,
+        );
+
+        $this->users->save($user);
+        $this->events->dispatch(new UserRegistered($user->id, $user->email, $user->name));
+
+        return $user;
+    }
+}
+----
+
+=== Dispatching Commands
+
+[source,php]
+----
+$user = $bus->dispatch(new CreateUserCommand(
+    name:     'Alice Johnson',
+    email:    'alice@example.com',
+    password: 'SecurePass123!',
+    role:     'editor',
+));
+----
+
+== Console Commands
+
+=== Creating a Command
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Console\Commands;
+
+use Webware\Console\Command;
+
+final class SyncUsersCommand extends Command
+{
+    protected string $signature   = 'users:sync {--source=} {--dry-run}';
+    protected string $description = 'Sync users from an external source.';
+
+    public function handle(): int
+    {
+        $source = $this->option('source') ?? 'default';
+        $dryRun = $this->option('dry-run');
+
+        $this->info("Syncing users from source: {$source}");
+
+        $users = $this->container->make(UserSyncService::class)->sync($source, dryRun: $dryRun);
+
+        $this->table(
+            ['ID', 'Email', 'Status'],
+            collect($users)->map(fn($u) => [$u->id, $u->email, $u->syncStatus])->toArray(),
+        );
+
+        $this->info("Synced {$users->count()} users.");
+        return self::SUCCESS;
+    }
+}
+----
+
+=== Registering Commands
+
+[source,php]
+----
+// config/commands.php
+return [
+    App\Console\Commands\SyncUsersCommand::class,
+    App\Console\Commands\PruneAuditLogsCommand::class,
+    App\Console\Commands\GenerateApiKeyCommand::class,
+];
+----
+
+=== Running Commands
+
+[source,bash]
+----
+php artisan users:sync --source=ldap
+php artisan users:sync --source=csv --dry-run
+----
+
+== Testing
+
+Webware encourages three layers of tests.
+
+=== Unit Tests
+
+Test a single class in isolation using mocks for all dependencies:
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
+use App\Handlers\CreateUserHandler;
+
+#[CoversClass(CreateUserHandler::class)]
+final class CreateUserHandlerTest extends TestCase
+{
+    public function testCreatesUserAndDispatchesEvent(): void
+    {
+        $repository = $this->createMock(UserRepositoryInterface::class);
+        $repository->expects(self::once())->method('findByEmail')->willReturn(null);
+        $repository->expects(self::once())->method('save');
+
+        $events = $this->createMock(EventDispatcher::class);
+        $events->expects(self::once())->method('dispatch')
+               ->with(self::isInstanceOf(UserRegistered::class));
+
+        $handler = new CreateUserHandler($repository, $events, new BcryptHasher());
+        $user    = $handler->handle(new CreateUserCommand('Alice', 'alice@example.com', 'pass'));
+
+        self::assertSame('alice@example.com', $user->email);
+    }
+}
+----
+
+=== Integration Tests
+
+Test the full stack using an in-memory or test database:
+
+[source,php]
+----
+<?php
+
+use Webware\Testing\TestCase;
+
+final class UserApiTest extends TestCase
+{
+    public function testCreateUserReturns201(): void
+    {
+        $response = $this->actingAs($this->adminUser())
+                         ->post('/api/v1/users', [
+                             'name'     => 'Test User',
+                             'email'    => 'test@example.com',
+                             'password' => 'SecurePass123!',
+                         ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('data.email', 'test@example.com');
+    }
+}
+----
+
+=== Feature Tests
+
+Drive the browser or HTTP client end-to-end:
+
+[source,php]
+----
+<?php
+
+use Webware\Testing\BrowserTestCase;
+
+final class LoginFlowTest extends BrowserTestCase
+{
+    public function testUserCanLoginAndAccessDashboard(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->visit('/login')
+                    ->type('email', 'alice@example.com')
+                    ->type('password', 'secret')
+                    ->press('Sign in')
+                    ->assertPathIs('/dashboard')
+                    ->assertSee('Welcome, Alice');
+        });
+    }
+}
+----
+
+== Deployment
+
+=== Production Checklist
+
+[cols="1,4",options="header"]
+|===
+| Step | Action
+| 1    | Set `APP_ENV=production` and `APP_DEBUG=false`
+| 2    | Generate a fresh `APP_KEY` with `php artisan key:generate`
+| 3    | Run `composer install --no-dev --optimize-autoloader`
+| 4    | Cache config: `php artisan config:cache`
+| 5    | Cache routes: `php artisan route:cache`
+| 6    | Cache views: `php artisan view:cache`
+| 7    | Run database migrations: `php artisan migrate --force`
+| 8    | Set filesystem permissions: `chmod -R 755 storage bootstrap/cache`
+| 9    | Configure a process manager (Supervisor) for queue workers
+| 10   | Point Nginx/Apache document root to `public/`
+|===
+
+=== Nginx Configuration
+
+[source,nginx]
+----
+server {
+    listen 443 ssl http2;
+    server_name example.com www.example.com;
+
+    root /var/www/webware/public;
+    index index.php;
+
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass   unix:/run/php/php8.4-fpm.sock;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+----
+
+=== Supervisor (Queue Workers)
+
+[source,ini]
+----
+[program:webware-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/webware/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=4
+redirect_stderr=true
+stdout_logfile=/var/www/webware/storage/logs/worker.log
+stopwaitsecs=3600
+----
+
+Start workers:
+
+[source,bash]
+----
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start webware-worker:*
+----
+
+=== Health Check Endpoint
+
+[source,php]
+----
+$router->get('/health', static function () use ($container): Response {
+    $checks = [];
+
+    // Database
+    try {
+        $container->make(DB::class)->select('SELECT 1');
+        $checks['database'] = 'ok';
+    } catch (\Throwable) {
+        $checks['database'] = 'error';
+    }
+
+    // Cache
+    try {
+        $container->make(Cache::class)->set('_health', '1', 5);
+        $checks['cache'] = 'ok';
+    } catch (\Throwable) {
+        $checks['cache'] = 'error';
+    }
+
+    $status = in_array('error', $checks, true) ? 503 : 200;
+    return new Response($status, [], json_encode(['status' => $checks]));
+});
+----
+
+== Extension Points Summary
+
+[cols="2,3,2",options="header"]
+|===
+| Extension Point       | Interface/Base Class              | Register Via
+| Service Provider      | `ServiceProvider`                 | `config/app.php` providers
+| Middleware            | `MiddlewareInterface`             | `config/middleware.php`
+| Console Command       | `Command`                         | `config/commands.php`
+| Event Listener        | `ListenerInterface`               | `EventServiceProvider::$listen`
+| Repository            | Any interface                     | Service provider `register()`
+| Cache Driver          | `CacheDriverInterface`            | `CacheManager::extend()`
+| Queue Driver          | `QueueDriverInterface`            | `QueueManager::extend()`
+| Mail Transport        | `TransportInterface`              | `MailManager::extend()`
+| Route Model Binding   | `BindingInterface`                | `RouteServiceProvider`
+| Validation Rule       | `ValidationRuleInterface`         | `Validator::extend()`
+| Blade Directive       | Closure                           | `Blade::directive()`
+| Macro                 | Closure                           | `ClassName::macro()`
+|===
+
+CAUTION: Avoid modifying framework core files directly. Use the extension
+points listed above. Core files may be overwritten during framework updates.

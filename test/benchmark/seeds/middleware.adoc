@@ -1,0 +1,313 @@
+= Webware Framework: Middleware Guide
+Webware Team <team@webware.io>
+v1.0.0, 2026-01-01
+:toc: left
+:source-highlighter: highlight.js
+:icons: font
+:description: Deep dive into the Webware middleware pipeline — writing, ordering, and composing middleware.
+
+Middleware intercepts HTTP requests and responses, forming a composable
+pipeline between the router and the final handler. Each middleware wraps
+the next, forming an onion-ring structure.
+
+== How the Pipeline Works
+
+A request flows inward through the middleware stack and the response
+flows outward in reverse order:
+
+----
+Request  →  Middleware A  →  Middleware B  →  Middleware C  →  Handler
+Response ←  Middleware A  ←  Middleware B  ←  Middleware C  ←  Handler
+----
+
+Each middleware can:
+
+* Inspect or modify the request before passing it on
+* Short-circuit the pipeline and return a response early
+* Inspect or modify the response on the way back out
+
+== Writing Middleware
+
+=== The MiddlewareInterface
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+namespace App\Middleware;
+
+use Webware\Http\Request;
+use Webware\Http\Response;
+use Webware\Middleware\Handler;
+use Webware\Middleware\MiddlewareInterface;
+
+final class ExampleMiddleware implements MiddlewareInterface
+{
+    public function process(Request $request, Handler $handler): Response
+    {
+        // Before: inspect/modify the request
+        $request = $request->withHeader('X-Request-Id', uniqid('req_', true));
+
+        // Pass to the next middleware/handler
+        $response = $handler->handle($request);
+
+        // After: inspect/modify the response
+        return $response->withHeader('X-Processed-By', 'Webware');
+    }
+}
+----
+
+=== Short-Circuiting
+
+Return a response without calling `$handler->handle()`:
+
+[source,php]
+----
+final class MaintenanceModeMiddleware implements MiddlewareInterface
+{
+    public function __construct(private readonly Config $config) {}
+
+    public function process(Request $request, Handler $handler): Response
+    {
+        if ($this->config->get('app.maintenance', false)) {
+            return new Response(503, ['Retry-After' => '300'], json_encode([
+                'error'   => 'Service Unavailable',
+                'message' => 'The application is undergoing maintenance. Please try again shortly.',
+            ]));
+        }
+
+        return $handler->handle($request);
+    }
+}
+----
+
+=== Accessing the Container
+
+Middleware is resolved through the service container, so constructor
+injection works automatically:
+
+[source,php]
+----
+final class RateLimitMiddleware implements MiddlewareInterface
+{
+    public function __construct(
+        private readonly Cache      $cache,
+        private readonly Config     $config,
+        private readonly Logger     $logger,
+    ) {}
+
+    public function process(Request $request, Handler $handler): Response
+    {
+        $key   = 'rate:' . $request->ip();
+        $limit = $this->config->get('throttle.requests_per_minute', 60);
+        $hits  = (int) $this->cache->get($key, 0);
+
+        if ($hits >= $limit) {
+            $this->logger->warning('Rate limit exceeded', ['ip' => $request->ip()]);
+            return new Response(429, ['Retry-After' => '60'], json_encode([
+                'error' => 'Too Many Requests',
+            ]));
+        }
+
+        $this->cache->put($key, $hits + 1, ttl: 60);
+
+        return $handler->handle($request)
+                       ->withHeader('X-RateLimit-Limit',     (string) $limit)
+                       ->withHeader('X-RateLimit-Remaining', (string) max(0, $limit - $hits - 1));
+    }
+}
+----
+
+== Built-In Middleware
+
+[cols="3,4,2",options="header"]
+|===
+| Class                          | Description                                        | Package
+| `JsonBodyParserMiddleware`     | Parses `application/json` request bodies           | Core
+| `FormBodyParserMiddleware`     | Parses `application/x-www-form-urlencoded` bodies  | Core
+| `TrimStringsMiddleware`        | Trims whitespace from string inputs                | Core
+| `SecurityHeadersMiddleware`    | Adds CSP, HSTS, X-Frame-Options headers            | Core
+| `CorsMiddleware`               | Handles CORS preflight and header injection        | Core
+| `AuthMiddleware`               | Validates JWT or session credentials               | `webware/auth-*`
+| `ThrottleMiddleware`           | Per-IP / per-user rate limiting                    | Core
+| `CacheMiddleware`              | Response caching via Cache driver                  | Core
+| `GzipMiddleware`               | Gzip-compresses responses                          | Core
+| `ETagMiddleware`               | Generates and validates ETags                      | Core
+| `AuditLogMiddleware`           | Logs every request/response to the audit log       | `webware/audit-log`
+| `SignedRouteMiddleware`        | Validates HMAC-signed URL signatures               | Core
+| `IdempotencyMiddleware`        | Enforces idempotency keys on mutating requests     | Core
+|===
+
+== Registering Middleware
+
+=== Global Middleware
+
+Runs on every request. Register in `config/middleware.php`:
+
+[source,php]
+----
+<?php
+
+return [
+    'global' => [
+        TrimStringsMiddleware::class,
+        ConvertEmptyStringsMiddleware::class,
+        JsonBodyParserMiddleware::class,
+        SecurityHeadersMiddleware::class,
+        CorsMiddleware::class,
+        RequestIdMiddleware::class,
+    ],
+];
+----
+
+=== Named Middleware
+
+Alias a class for easy reference in route definitions:
+
+[source,php]
+----
+'named' => [
+    'auth'       => AuthMiddleware::class,
+    'guest'      => GuestMiddleware::class,
+    'throttle'   => ThrottleMiddleware::class,
+    'role'       => RoleMiddleware::class,
+    'signed'     => SignedRouteMiddleware::class,
+    'idempotent' => IdempotencyMiddleware::class,
+    'cache'      => CacheMiddleware::class,
+    'etag'       => ETagMiddleware::class,
+],
+----
+
+Reference by alias on routes:
+
+[source,php]
+----
+$router->post('/orders', [OrderController::class, 'store'])
+       ->middleware(['auth', 'throttle:100,1', 'idempotent']);
+----
+
+=== Middleware Groups
+
+Bundle multiple middleware under a group name:
+
+[source,php]
+----
+'groups' => [
+    'web' => [
+        SessionMiddleware::class,
+        CsrfMiddleware::class,
+        AuthenticateSessionMiddleware::class,
+        ShareErrorsFromSessionMiddleware::class,
+    ],
+    'api' => [
+        JsonBodyParserMiddleware::class,
+        ThrottleMiddleware::class . ':60,1',
+        AuthMiddleware::class,
+    ],
+    'admin' => [
+        AuthMiddleware::class,
+        RoleMiddleware::class . ':admin',
+        AuditLogMiddleware::class,
+        TwoFactorMiddleware::class,
+    ],
+],
+----
+
+Apply a group to a route group:
+
+[source,php]
+----
+$router->group('/api/v1', static function (Router $r) {
+    // ...
+}, middleware: ['api']);
+----
+
+== Middleware Parameters
+
+Pass configuration to middleware via the route definition:
+
+[source,php]
+----
+// RateLimitMiddleware::process($request, $handler, int $max, int $perMinutes)
+$router->post('/checkout', [CheckoutController::class, 'process'])
+       ->middleware(ThrottleMiddleware::class . ':10,1');
+
+// RoleMiddleware::process($request, $handler, string ...$roles)
+$router->delete('/users/{id}', [UserController::class, 'destroy'])
+       ->middleware(RoleMiddleware::class . ':admin,super-admin');
+----
+
+== Middleware Ordering
+
+Middleware is applied in the order it is declared. The outermost middleware
+runs first on the request and last on the response.
+
+[cols="1,3",options="header"]
+|===
+| Order | Recommended Placement
+| First | `RequestIdMiddleware` — assign ID before any logging
+| Early | `SecurityHeadersMiddleware` — headers on all responses
+| Early | `CorsMiddleware` — must handle OPTIONS preflight early
+| Mid   | `ThrottleMiddleware` — rate-limit before auth overhead
+| Mid   | `AuthMiddleware` — authenticate before business logic
+| Late  | `CacheMiddleware` — only cache authenticated responses if needed
+| Last  | `AuditLogMiddleware` — log the final outcome
+|===
+
+WARNING: Placing `CorsMiddleware` after `AuthMiddleware` will cause CORS
+preflight (`OPTIONS`) requests to fail authentication checks and return 401
+instead of the expected 200 response.
+
+== Testing Middleware
+
+[source,php]
+----
+<?php
+
+declare(strict_types=1);
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
+use Webware\Http\Request;
+use Webware\Http\Response;
+use Webware\Middleware\Handler;
+use App\Middleware\RateLimitMiddleware;
+
+#[CoversClass(RateLimitMiddleware::class)]
+final class RateLimitMiddlewareTest extends TestCase
+{
+    public function testAllowsRequestsUnderLimit(): void
+    {
+        $cache      = new ArrayCache();
+        $config     = new ArrayConfig(['throttle.requests_per_minute' => 60]);
+        $middleware = new RateLimitMiddleware($cache, $config, new NullLogger());
+
+        $request  = Request::create('GET', '/api/test');
+        $handler  = Handler::fromCallable(fn($r) => new Response(200));
+
+        $response = $middleware->process($request, $handler);
+
+        self::assertSame(200, $response->statusCode());
+        self::assertSame('60', $response->header('X-RateLimit-Limit'));
+        self::assertSame('59', $response->header('X-RateLimit-Remaining'));
+    }
+
+    public function testBlocksRequestsOverLimit(): void
+    {
+        $cache = new ArrayCache(['rate:127.0.0.1' => 60]);
+        $middleware = new RateLimitMiddleware($cache, new ArrayConfig(['throttle.requests_per_minute' => 60]), new NullLogger());
+
+        $request  = Request::create('GET', '/api/test', serverParams: ['REMOTE_ADDR' => '127.0.0.1']);
+        $handler  = Handler::fromCallable(fn($r) => new Response(200));
+
+        $response = $middleware->process($request, $handler);
+
+        self::assertSame(429, $response->statusCode());
+    }
+}
+----
+
+TIP: Use `Handler::fromCallable()` to create a lightweight handler stub
+in tests without wiring up the full router.

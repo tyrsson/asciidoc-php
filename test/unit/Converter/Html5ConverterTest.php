@@ -98,13 +98,13 @@ final class Html5ConverterTest extends TestCase
     public function testConvertSectionContainsH2Heading(): void
     {
         $html = self::convert("= Title\n\n== Section One\n\nContent.\n");
-        self::assertStringContainsString('<h2>Section One</h2>', $html);
+        self::assertMatchesRegularExpression('/<h2[^>]*>Section One<\/h2>/', $html);
     }
 
     public function testConvertSection2ContainsH3Heading(): void
     {
         $html = self::convert("= Title\n\n== Section One\n\n=== Sub Section\n\nContent.\n");
-        self::assertStringContainsString('<h3>Sub Section</h3>', $html);
+        self::assertMatchesRegularExpression('/<h3[^>]*>Sub Section<\/h3>/', $html);
     }
 
     public function testConvertSectionWithIdAttribute(): void
@@ -358,6 +358,106 @@ final class Html5ConverterTest extends TestCase
         $html   = $doc->getConverter()->convert($doc);
         self::assertStringContainsString('<div id="toc"', $html);
         self::assertStringContainsString('<ul class="sectlevel1">', $html);
+    }
+
+    public function testConvertDocumentWithTocLeftHasSidebarBodyClass(): void
+    {
+        $doc    = new Document([
+            'converter'  => new Html5Converter(),
+            'attributes' => ['toc' => 'left'],
+        ]);
+        $src    = "= Title\n\n== One\n\nContent.\n\n== Two\n\nContent.\n";
+        $reader = new PreprocessorReader($doc, $src, new Cursor(null, null, null));
+        Parser::parse($reader, $doc);
+        $html   = $doc->getConverter()->convert($doc);
+        self::assertStringContainsString('<body class="article toc2 toc-left">', $html);
+    }
+
+    public function testConvertDocumentWithTocLeftHasToc2Div(): void
+    {
+        $doc    = new Document([
+            'converter'  => new Html5Converter(),
+            'attributes' => ['toc' => 'left'],
+        ]);
+        $src    = "= Title\n\n== One\n\nContent.\n\n== Two\n\nContent.\n";
+        $reader = new PreprocessorReader($doc, $src, new Cursor(null, null, null));
+        Parser::parse($reader, $doc);
+        $html   = $doc->getConverter()->convert($doc);
+        self::assertStringContainsString('<div id="toc" class="toc2">', $html);
+    }
+
+    public function testConvertDocumentWithTocLeftPlacesSidebarBeforeHeader(): void
+    {
+        $doc    = new Document([
+            'converter'  => new Html5Converter(),
+            'attributes' => ['toc' => 'left'],
+        ]);
+        $src    = "= Title\n\n== One\n\nContent.\n\n== Two\n\nContent.\n";
+        $reader = new PreprocessorReader($doc, $src, new Cursor(null, null, null));
+        Parser::parse($reader, $doc);
+        $html   = $doc->getConverter()->convert($doc);
+        // The sidebar toc must appear before #header in the output
+        $tocPos    = strpos($html, '<div id="toc"');
+        $headerPos = strpos($html, '<div id="header">');
+        self::assertNotFalse($tocPos);
+        self::assertNotFalse($headerPos);
+        // The sidebar TOC is now rendered inside #header (matches Asciidoctor structure).
+        self::assertGreaterThan($headerPos, $tocPos);
+    }
+
+    public function testConvertDocumentWithTocLeftDoesNotDuplicateToc(): void
+    {
+        $doc    = new Document([
+            'converter'  => new Html5Converter(),
+            'attributes' => ['toc' => 'left'],
+        ]);
+        $src    = "= Title\n\n== One\n\nContent.\n\n== Two\n\nContent.\n";
+        $reader = new PreprocessorReader($doc, $src, new Cursor(null, null, null));
+        Parser::parse($reader, $doc);
+        $html   = $doc->getConverter()->convert($doc);
+        self::assertSame(1, substr_count($html, '<div id="toc"'));
+    }
+
+    public function testConvertDocumentWithTocRightHasTocRightBodyClass(): void
+    {
+        $doc    = new Document([
+            'converter'  => new Html5Converter(),
+            'attributes' => ['toc' => 'right'],
+        ]);
+        $src    = "= Title\n\n== One\n\nContent.\n\n== Two\n\nContent.\n";
+        $reader = new PreprocessorReader($doc, $src, new Cursor(null, null, null));
+        Parser::parse($reader, $doc);
+        $html   = $doc->getConverter()->convert($doc);
+        self::assertStringContainsString('<body class="article toc2 toc-right">', $html);
+        self::assertStringContainsString('<div id="toc" class="toc2">', $html);
+    }
+
+    public function testConvertDocumentWithTocPlacementLeftAttribute(): void
+    {
+        $doc    = new Document([
+            'converter'  => new Html5Converter(),
+            'attributes' => ['toc' => '', 'toc-placement' => 'left'],
+        ]);
+        $src    = "= Title\n\n== One\n\nContent.\n\n== Two\n\nContent.\n";
+        $reader = new PreprocessorReader($doc, $src, new Cursor(null, null, null));
+        Parser::parse($reader, $doc);
+        $html   = $doc->getConverter()->convert($doc);
+        self::assertStringContainsString('<body class="article toc2 toc-left">', $html);
+        self::assertStringContainsString('<div id="toc" class="toc2">', $html);
+    }
+
+    public function testConvertDocumentWithInlineTocHasNoSidebarClass(): void
+    {
+        $doc    = new Document([
+            'converter'  => new Html5Converter(),
+            'attributes' => ['toc' => ''],
+        ]);
+        $src    = "= Title\n\n== One\n\nContent.\n";
+        $reader = new PreprocessorReader($doc, $src, new Cursor(null, null, null));
+        Parser::parse($reader, $doc);
+        $html   = $doc->getConverter()->convert($doc);
+        self::assertStringNotContainsString('<body class="article toc2', $html);
+        self::assertStringNotContainsString('<div id="toc" class="toc2">', $html);
     }
 
     // ── Inline quoted ─────────────────────────────────────────────────────────

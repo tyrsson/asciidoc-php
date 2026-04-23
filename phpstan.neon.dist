@@ -5,5 +5,5 @@ parameters:
         - test
     treatPhpDocTypesAsCertain: false
     stubFiles:
-        - stubs/Async/Scope.php
-        - stubs/Async/TaskGroup.php
+        - stubs/Async/Scope.php.stub
+        - stubs/Async/TaskGroup.php.stub

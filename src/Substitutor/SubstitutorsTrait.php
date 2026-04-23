@@ -194,7 +194,7 @@ trait SubstitutorsTrait
             Rx::XREF_MACRO,
             function (array $m): string {
                 $refid = $m[1];
-                $label = trim($m[2] ?? '');
+                $label = trim($m[2]);
                 if ($label === '') {
                     $node = $this->document->resolveId($refid);
                     if ($node instanceof Section) {

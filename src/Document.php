@@ -254,7 +254,7 @@ class Document extends AbstractBlock implements DocumentInterface
     private function initBuiltinAttributes(): void
     {
         $date     = date('Y-m-d');
-        $time     = date('H:i:s');
+        $time     = date('H:i:s') . ' UTC';
         $datetime = $date . ' ' . $time;
 
         $defaults = [

@@ -150,7 +150,7 @@ final class Html5ConverterTest extends TestCase
         $html = self::convert($src);
         self::assertStringContainsString('github.min.css', $html);
         self::assertStringContainsString('highlight.min.js', $html);
-        self::assertStringContainsString('hljs.highlightAll()', $html);
+        self::assertStringContainsString('hljs.highlightBlock(el)', $html);
     }
 
     public function testConvertDocumentWithHighlightJsCustomTheme(): void
@@ -172,7 +172,7 @@ final class Html5ConverterTest extends TestCase
     {
         $src  = "= Doc\n\n[source,php]\n----\necho 1;\n----\n";
         $html = self::convert($src);
-        self::assertStringNotContainsString('hljs.highlightAll()', $html);
+        self::assertStringNotContainsString('hljs.highlightBlock(el)', $html);
     }
 
     // ── Icon font ─────────────────────────────────────────────────────────────

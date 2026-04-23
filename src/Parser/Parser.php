@@ -545,7 +545,14 @@ final class Parser
 
         // Read lines until the matching closing delimiter (same as opening).
         $closingPattern = '/' . preg_quote($openingDelimiter, '/') . '\s*$/';
+
+        if ($model === ContentModel::VERBATIM || $model === ContentModel::RAW) {
+            $reader->setVerbatimMode(true);
+        }
         $lines = $reader->readLinesUntil(['terminator' => $closingPattern]);
+        if ($model === ContentModel::VERBATIM || $model === ContentModel::RAW) {
+            $reader->setVerbatimMode(false);
+        }
 
         $block = new Block($parent->getDocument(), $parent, $context, $model);
         $block->setLines($lines);
@@ -716,6 +723,29 @@ final class Parser
     ): ListItem {
         // Extract marker and principal text from the match.
         [$marker, $text] = self::extractListItemParts($match, $listType);
+
+        // Collect any wrapped (indented) continuation lines that belong to
+        // the principal text.  An indented line that is not a list marker or
+        // block delimiter is a soft-wrap of the current item's paragraph.
+        while ($reader->hasMoreLines()) {
+            $nextLine = $reader->peekLine();
+            if ($nextLine === null || $nextLine === '') {
+                break;
+            }
+            if (preg_match('/^[ \t]+\S/', $nextLine) !== 1) {
+                break;
+            }
+            // Stop if it happens to be a list marker or block delimiter.
+            if (
+                preg_match(Rx::UNORDERED_LIST, $nextLine) === 1 ||
+                preg_match(Rx::ORDERED_LIST, $nextLine) === 1 ||
+                preg_match(Rx::BLOCK_DELIMITER, $nextLine) === 1
+            ) {
+                break;
+            }
+            $reader->readLine();
+            $text .= "\n" . ltrim($nextLine);
+        }
 
         $item = new ListItem($list->getDocument(), $list, $text, $marker);
 

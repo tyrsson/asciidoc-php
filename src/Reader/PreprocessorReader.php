@@ -61,6 +61,12 @@ class PreprocessorReader extends Reader
     /** Running total of resolved includes (hard safety limit). */
     private int $includes = 0;
 
+    /**
+     * When true, single-line comment lines (//) are preserved as content
+     * rather than being consumed.  Set during verbatim/literal block reads.
+     */
+    private bool $verbatimMode = false;
+
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
@@ -89,6 +95,15 @@ class PreprocessorReader extends Reader
     }
 
     // ── Front matter ──────────────────────────────────────────────────────────
+
+    /**
+     * Enable or disable verbatim mode.  When enabled, single-line comment
+     * lines (`//`) are passed through as content rather than being consumed.
+     */
+    public function setVerbatimMode(bool $mode): void
+    {
+        $this->verbatimMode = $mode;
+    }
 
     /**
      * If the source begins with a YAML front matter block (--- … ---), consume
@@ -162,6 +177,13 @@ class PreprocessorReader extends Reader
      */
     protected function processLine(string $line): string|null
     {
+        // In verbatim mode (inside a delimited listing/literal block) all
+        // lines are passed through as raw content — no directives, no
+        // attribute entries, no comment suppression.
+        if ($this->verbatimMode) {
+            return $line;
+        }
+
         // 1. endif:: and else:: are always processed — even during a skip.
         if (preg_match(self::ENDIF_RX, $line) === 1) {
             $this->handleEndif();

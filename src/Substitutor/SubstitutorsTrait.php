@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webware\AsciidocPhp\Substitutor;
 
 use Webware\AsciidocPhp\Node\Inline;
+use Webware\AsciidocPhp\Node\Section;
 
 /**
  * Mixed into AbstractNode. Provides the complete substitution pipeline:
@@ -116,8 +117,9 @@ trait SubstitutorsTrait
 
     protected function subSpecialChars(string $text): string
     {
-        // Asciidoctor uses ENT_COMPAT — escapes &, <, > and " but NOT single quotes.
-        return htmlspecialchars($text, ENT_COMPAT | ENT_SUBSTITUTE, 'UTF-8', false);
+        // Asciidoctor's specialcharacters substitution only encodes &, < and >.
+        // Double-quotes are left as-is (they are safe in HTML text content).
+        return htmlspecialchars($text, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
     }
 
     protected function subQuotes(string $text): string
@@ -163,7 +165,52 @@ trait SubstitutorsTrait
 
     protected function subMacros(string $text): string
     {
-        // Tier 2: link::, image:, <<xref>>, footnote:, kbd: etc.
+        // Xref shorthand: <<id>> or <<id, label>>
+        // By the time this runs, specialcharacters has been applied, so both
+        // `<<` → `&lt;&lt;` and `>>` → `&gt;&gt;`.
+        $text = (string) preg_replace_callback(
+            '/&lt;&lt;([\w.-]+)(?:,\s*([^&>]+?))?&gt;&gt;/u',
+            function (array $m): string {
+                $refid = $m[1];
+                $label = trim($m[2] ?? '');
+                if ($label === '') {
+                    $node = $this->document->resolveId($refid);
+                    if ($node instanceof Section) {
+                        $label = (string) $node->getTitle();
+                    } elseif ($node !== null) {
+                        $reftext = $node->getAttribute('reftext');
+                        $label   = is_string($reftext) ? $reftext : $refid;
+                    } else {
+                        $label = $refid;
+                    }
+                }
+                return '<a href="#' . $refid . '">' . $label . '</a>';
+            },
+            $text,
+        );
+
+        // Xref macro: xref:id[label]
+        $text = (string) preg_replace_callback(
+            Rx::XREF_MACRO,
+            function (array $m): string {
+                $refid = $m[1];
+                $label = trim($m[2]);
+                if ($label === '') {
+                    $node = $this->document->resolveId($refid);
+                    if ($node instanceof Section) {
+                        $label = (string) $node->getTitle();
+                    } elseif ($node !== null) {
+                        $reftext = $node->getAttribute('reftext');
+                        $label   = is_string($reftext) ? $reftext : $refid;
+                    } else {
+                        $label = $refid;
+                    }
+                }
+                return '<a href="#' . $refid . '">' . $label . '</a>';
+            },
+            $text,
+        );
+
         return $text;
     }
 

@@ -145,7 +145,7 @@ final class Html5Converter extends AbstractConverter
     private const DEFAULT_STYLESHEET = __DIR__ . '/../../resources/css/asciidoctor.css';
 
     /** CDN base URL for highlight.js. */
-    private const HIGHLIGHTJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0';
+    private const HIGHLIGHTJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3';
 
     /** Font Awesome 4.x CDN URL (matches what Asciidoctor uses for icon fonts). */
     private const FONT_AWESOME_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css';
@@ -160,6 +160,7 @@ final class Html5Converter extends AbstractConverter
         $safeTitle = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
 
         $styleTag  = $this->renderStylesheet($doc);
+        $webFonts  = $this->renderWebFonts($doc);
         $iconHead  = $this->renderIconFontHead($doc);
         $hlHead    = $this->renderHighlighterHead($doc);
 
@@ -169,7 +170,7 @@ final class Html5Converter extends AbstractConverter
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="asciidoc-php {$version}">
 <title>{$safeTitle}</title>
-{$styleTag}{$iconHead}{$hlHead}</head>
+{$styleTag}{$webFonts}{$iconHead}{$hlHead}</head>
 HTML;
     }
 
@@ -218,6 +219,18 @@ HTML;
         };
     }
 
+    private function renderWebFonts(Document $doc): string
+    {
+        // Skip if webfonts is explicitly unset (:webfonts!: or webfonts='').
+        if ($doc->getAttribute('webfonts') === false || $doc->getAttribute('webfonts') === '') {
+            return '';
+        }
+        // Custom font list or the Asciidoctor default (Open Sans + Noto Serif + Droid Sans Mono).
+        $fonts = $this->sa($doc, 'webfonts', 'Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700');
+        $href  = 'https://fonts.googleapis.com/css?family=' . $fonts;
+        return "<link rel=\"stylesheet\" href=\"{$href}\">\n";
+    }
+
     private function renderIconFontHead(Document $doc): string
     {
         if ($this->sa($doc, 'icons', '') !== 'font') {
@@ -243,7 +256,13 @@ HTML;
             return '';
         }
         $dir = rtrim($this->sa($doc, 'highlightjsdir', self::HIGHLIGHTJS_CDN), '/');
-        return "<script src=\"{$dir}/highlight.min.js\"></script>\n<script>hljs.highlightAll()</script>\n";
+        $initScript = <<<'JS'
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+JS;
+        return "<script src=\"{$dir}/highlight.min.js\"></script>\n<script>\n{$initScript}\n</script>\n";
     }
 
     private function renderDocumentBody(Document $doc): string
@@ -367,12 +386,12 @@ HTML;
 
         $lastUpdateLabel = $doc->getAttribute('last-update-label', null);
         if ($lastUpdateLabel !== null) {
-            $date  = $this->sa($doc, 'revdate', $this->sa($doc, 'docdate', ''));
+            $date  = $this->sa($doc, 'revdate', $this->sa($doc, 'localdatetime', ''));
             $label = is_string($lastUpdateLabel) ? $lastUpdateLabel : '';
             $inner .= htmlspecialchars($label . ' ' . $date, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
         }
 
-        return "<div id=\"footer\">\n<div id=\"footer-text\">\n{$inner}</div>\n</div>\n";
+        return "<div id=\"footer\">\n<div id=\"footer-text\">\n{$inner}\n</div>\n</div>\n";
     }
 
     // ── Embedded (fragment) ───────────────────────────────────────────────────
@@ -505,7 +524,8 @@ HTML;
 {$title}<table>
 <tr>
 {$iconCell}<td class="content">
-{$content}</td>
+{$content}
+</td>
 </tr>
 </table>
 </div>

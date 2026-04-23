@@ -114,7 +114,6 @@ h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title str
 :not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
 pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
 pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
-pre>code{display:block}
 pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
 em em{font-style:normal}
 strong strong{font-weight:400}
@@ -138,7 +137,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #content::before{content:none}
 #header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
 #header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
-#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header>h1:only-child{border-bottom:1px solid #dddddf;padding-bottom:8px}
 #header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
 #header .details span:first-child{margin-left:-.125em}
 #header .details span.email a{color:rgba(0,0,0,.85)}
@@ -160,6 +159,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #toctitle{color:#7a2518;font-size:1.2em}
 @media screen and (min-width:768px){#toctitle{font-size:1.375em}
 body.toc2{padding-left:15em;padding-right:0}
+body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
 #toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
 #toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
 #toc.toc2>ul{font-size:.9em;margin-bottom:0}
@@ -216,6 +216,7 @@ table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
 .literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
 .literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
 .listingblock>.content{position:relative}
+.listingblock pre>code{display:block}
 .listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
 .listingblock:hover code[data-lang]::before{display:block}
 .listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
@@ -325,7 +326,7 @@ a.image{text-decoration:none;display:inline-block}
 a.image object{pointer-events:none}
 sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
 sup.footnote a,sup.footnoteref a{text-decoration:none}
-sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+sup.footnote a:active,sup.footnoteref a:active,#footnotes .footnote a:first-of-type:active{text-decoration:underline}
 #footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
 #footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
 #footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
@@ -430,8 +431,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 #footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/github.min.css">
 </head>
 <body class="article toc2 toc-left">
 <div id="header">
@@ -529,7 +531,8 @@ asciidoc-php [options] -          # read from STDIN, write to STDOUT</code></pre
 </td>
 <td class="content">
 Only <code>html5</code> is implemented in v0.1.  The flag is accepted for
-forward-compatibility.</td>
+forward-compatibility.
+</td>
 </tr>
 </table>
 </div>
@@ -584,14 +587,10 @@ valid and how the header is rendered.</p>
 <p>Use <code>-</code> to write to STDOUT.</p>
 </li>
 <li>
-<p>When converting multiple input files this flag applies to every file in</p>
+<p>When converting multiple input files this flag applies to every file in
+sequence; prefer <code>--destination-dir</code> for batch conversion.</p>
 </li>
 </ul>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre class="highlightjs highlight"><code>  sequence; prefer `--destination-dir` for batch conversion.</code></pre>
-</div>
 </div>
 <hr>
 </div>
@@ -603,26 +602,14 @@ valid and how the header is rendered.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>The directory is created automatically (including intermediate</p>
+<p>The directory is created automatically (including intermediate
+directories) if it does not exist.</p>
 </li>
-</ul>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre class="highlightjs highlight"><code>  directories) if it does not exist.</code></pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
 <li>
-<p>Each output file is named after the input file with its extension</p>
+<p>Each output file is named after the input file with its extension
+replaced by <code>.html</code>.</p>
 </li>
 </ul>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre class="highlightjs highlight"><code>  replaced by `.html`.</code></pre>
-</div>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -639,14 +626,10 @@ valid and how the header is rendered.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>Defaults to the directory of the input file when <code>--out-file</code> / a</p>
+<p>Defaults to the directory of the input file when <code>--out-file</code> / a
+positional path is given, or the current working directory for STDIN.</p>
 </li>
 </ul>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre class="highlightjs highlight"><code>  positional path is given, or the current working directory for STDIN.</code></pre>
-</div>
 </div>
 <hr>
 </div>
@@ -766,7 +749,7 @@ attribute entries in the source file (they are <em>locked</em>).</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>skip-front-matter</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Strip leading YAML front matter before parsing (see &lt;&lt;yaml-front-matter&gt;&gt;)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Strip leading YAML front matter before parsing (see <a href="#yaml-front-matter">YAML Front Matter</a>)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>imagesdir</code></p></td>
@@ -933,7 +916,7 @@ $html = Asciidoc::convert($source, $opts);</code></pre>
 </div>
 <div class="paragraph">
 <p><code>$source</code> is any valid AsciiDoc string.  <code>$opts</code> is an optional
-associative array — see &lt;&lt;api-options&gt;&gt; for all recognised keys.</p>
+associative array — see <a href="#api-options">API Option Keys</a> for all recognised keys.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1066,10 +1049,13 @@ use Webware\AsciidocPhp\Parser\Parser;
 use Webware\AsciidocPhp\Reader\Cursor;
 use Webware\AsciidocPhp\Reader\PreprocessorReader;
 
+// High-level: skip-front-matter via the facade
 $html = Asciidoc::convertFile('page.adoc', [
     'attributes' =&gt; ['skip-front-matter' =&gt; ''],
 ]);
-</code></pre>
+
+// The raw YAML block is available as the `front-matter` document attribute
+// after the parse if you work at the lower-level API.</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -1104,11 +1090,12 @@ AsciiDoc content.</p>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">---
 layout: default
-title: &quot;My Page&quot;
+title: "My Page"
 author: Alice
 ---
 = My Page
 Alice
+:toc: left
 
 Document body starts here.</code></pre>
 </div>
@@ -1142,7 +1129,7 @@ Document body starts here.</code></pre>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Quote stripping</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Values wrapped in <code>&quot;…&quot;</code> or <code>'…'</code> have their surrounding quotes stripped.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Values wrapped in <code>"…"</code> or <code>'…'</code> have their surrounding quotes stripped.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">No override</p></td>
@@ -1376,9 +1363,15 @@ or queried from <code>Document::getAttribute()</code>.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-22</div>
+Last updated 2026-04-23 00:27:58 UTC
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
-<script>hljs.highlightAll()</script>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
+<script>
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+</script>
 </body>
 </html>

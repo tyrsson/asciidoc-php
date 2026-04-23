@@ -168,7 +168,7 @@ final class AsciidocConvertTest extends TestCase
 
         // Syntax highlighting assets (fixture has :source-highlighter: highlight.js).
         self::assertStringContainsString('highlight.min.js', $html);
-        self::assertStringContainsString('hljs.highlightAll()', $html);
+        self::assertStringContainsString('hljs.highlightBlock(el)', $html);
 
         // Icon font assets (fixture has :icons: font).
         self::assertStringContainsString('font-awesome', $html);

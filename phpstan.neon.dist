@@ -4,3 +4,6 @@ parameters:
         - src
         - test
     treatPhpDocTypesAsCertain: false
+    stubFiles:
+        - stubs/Async/Scope.php
+        - stubs/Async/TaskGroup.php

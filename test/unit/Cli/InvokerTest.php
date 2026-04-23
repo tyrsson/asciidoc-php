@@ -208,4 +208,74 @@ final class InvokerTest extends TestCase
         // The good file should still have been converted.
         self::assertFileExists($this->tmpDir . '/good.html');
     }
+
+    // ── invoke() — async / TrueAsync TaskGroup ────────────────────────────────
+    // These tests require the true-async PHP extension.  They are automatically
+    // skipped in CI environments where the extension is not installed.
+    // See planning/10-async-runtime.md — "Activating Full Async Support" for
+    // the steps needed to enable these tests in the GitHub Actions pipeline.
+
+    /**
+     * @requires extension true-async
+     */
+    public function testInvokeConcurrentConvertsAllFiles(): void
+    {
+        $a = $this->writeAdoc('ca.adoc', "= A\n\nContent A.\n");
+        $b = $this->writeAdoc('cb.adoc', "= B\n\nContent B.\n");
+        $c = $this->writeAdoc('cc.adoc', "= C\n\nContent C.\n");
+
+        $opts    = $this->makeOptions(inputFiles: [$a, $b, $c]);
+        $invoker = new Invoker($opts);
+
+        $code = $invoker->invoke();
+
+        self::assertSame(0, $code);
+        self::assertFileExists($this->tmpDir . '/ca.html');
+        self::assertFileExists($this->tmpDir . '/cb.html');
+        self::assertFileExists($this->tmpDir . '/cc.html');
+    }
+
+    /**
+     * @requires extension true-async
+     */
+    public function testInvokeConcurrentPartialFailureIsolated(): void
+    {
+        $good1 = $this->writeAdoc('cg1.adoc', "= Good1\n\nOk.\n");
+        $good2 = $this->writeAdoc('cg2.adoc', "= Good2\n\nOk.\n");
+
+        // Two good files and one bad — the good ones must still be written.
+        $opts    = $this->makeOptions(
+            inputFiles: [$good1, '/no/such/file.adoc', $good2],
+            quiet: true,
+        );
+        $invoker = new Invoker($opts);
+
+        $code = $invoker->invoke();
+
+        self::assertSame(1, $code);
+        self::assertFileExists($this->tmpDir . '/cg1.html');
+        self::assertFileExists($this->tmpDir . '/cg2.html');
+    }
+
+    /**
+     * @requires extension true-async
+     */
+    public function testInvokeConcurrencyLimitRespected(): void
+    {
+        // Verifies that the concurrency option is passed through to TaskGroup
+        // without error; correctness of the limit itself is internal to TrueAsync.
+        $a = $this->writeAdoc('la.adoc', "= A\n\nA.\n");
+        $b = $this->writeAdoc('lb.adoc', "= B\n\nB.\n");
+        $c = $this->writeAdoc('lc.adoc', "= C\n\nC.\n");
+
+        $opts    = $this->makeOptions(inputFiles: [$a, $b, $c], concurrency: 2);
+        $invoker = new Invoker($opts);
+
+        $code = $invoker->invoke();
+
+        self::assertSame(0, $code);
+        self::assertFileExists($this->tmpDir . '/la.html');
+        self::assertFileExists($this->tmpDir . '/lb.html');
+        self::assertFileExists($this->tmpDir . '/lc.html');
+    }
 }

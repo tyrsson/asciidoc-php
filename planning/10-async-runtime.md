@@ -264,3 +264,89 @@ architectural changes:
 | Remote `include::` URLs | `file_get_contents('https://...')` already suspends transparently |
 | Parallel extension calls | `TreeProcessorExtension` instances could run concurrently in a `TaskGroup` |
 | Watch mode | `Async\FileSystemWatcher` detects changes; re-run affected file coroutines |
+
+---
+
+## Checklist: Activating Full Async Support When PHP 8.6 Ships
+
+The `Cli\Invoker` already contains a `TaskGroup`-based concurrent batch path
+behind a `class_exists(\Async\TaskGroup::class)` guard. When the following
+prerequisites are met, flip the switch by completing the steps below.
+
+### Prerequisites
+
+1. **PHP 8.6 reaches a stable release** (not a nightly/dev build).
+2. **`true-async` extension is available in `shivammathur/setup-php`'s extension
+   registry** (check [setup-php supported extensions](https://setup-php.com/extensions)
+   for `true-async`).
+3. **`webware/coding-standard` adds `~8.6.0` to its `require.php` constraint**
+   (currently `~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0`), which also unblocks
+   `composer check-all` running on 8.6 without the `check-all` script workaround.
+
+### Steps
+
+#### 1 — Update `composer.json`
+
+```json
+{
+    "require": {
+        "php": "~8.4.0 || ~8.5.0 || ~8.6.0"
+    },
+    "config": {
+        "platform": {
+            "php": "8.6.0"
+        }
+    }
+}
+```
+
+Remove the `~8.4.0 || ~8.5.0` range once 8.6 is the minimum you want to enforce.
+
+#### 2 — Update the GitHub Actions workflow
+
+In every job that runs `composer install` / `phpunit` / `phpstan`, add
+`true-async` to the `extensions` list:
+
+```yaml
+- uses: shivammathur/setup-php@v2
+  with:
+    php-version: '8.6'
+    extensions: true-async   # ← add this line
+    tools: composer:v2
+```
+
+If the workflow matrix tests multiple PHP versions, add the extension only on
+the `8.6` matrix entry — the sequential fallback in `Invoker` covers older
+versions automatically.
+
+#### 3 — Un-skip the async PHPUnit tests
+
+Async-specific tests are annotated with:
+
+```php
+/** @requires extension true-async */
+```
+
+Once the extension is available in CI, these tests run automatically with no
+code change needed.
+
+#### 4 — Remove the `class_exists` guard (optional clean-up)
+
+Once PHP 8.6 + TrueAsync is the project minimum, the feature-detection guard
+in `Cli\Invoker::invoke()` can be simplified to always use the `TaskGroup` path:
+
+```php
+// Before (guard):
+if (count($files) > 1 && class_exists(\Async\TaskGroup::class)) { ... }
+
+// After (always async, 8.6+ minimum):
+if (count($files) > 1) { ... }
+```
+
+#### 5 — Rename `composer check-all` back to `composer check` (optional)
+
+The script was renamed from `check` to `check-all` to avoid a collision with
+Composer 2.10's built-in `check` command, which runs `check-platform-reqs`
+first and fails because `webware/coding-standard` does not yet declare PHP 8.6
+support (see step 0 — prerequisite 3). Once that package is updated, the script
+can be renamed back in `composer.json`.
